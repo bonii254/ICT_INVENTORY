@@ -18,6 +18,10 @@ import { assetSchema } from "../../schemas/assetSchema";
 import { useAssetOptions } from "../../hooks/useAssetOptions";
 import { useApiPost } from "../../helpers/api_helper";
 import AsyncSelectInput from "../../helpers/AsyncSelectInput";
+import AddDepartmentModal from "./Custom/Department/AddDepartmentModal";
+import AddCategoryModal from "./Custom/Category/AddCategoryModal";
+import AddLocationModal from "./Custom/Location/AddLocationModal";
+import AddUserModal from "./Custom/User/AddUserModal";
 
 type CreatedAsset = {
   asset_tag: string;
@@ -41,8 +45,12 @@ interface AddAssetModalProps {
 
 const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
   const [createdAsset, setCreatedAsset] = useState<CreatedAsset | null>(null);
+  const [depModalOpen, setDepModalOpen] = useState(false);
+  const [catModalOpen, setCatModalOpen] = useState(false);
+  const [locModalOpen, setLocModalOpen] = useState(false);
+  const [userModalOpen, setUserModalOpen] = useState(false);
 
-  const { departments, locations, statuses, users, categories } =
+  const { departments, locations, statuses, users, categories, refetch } =
     useAssetOptions();
 
   const createAsset = useApiPost<
@@ -57,7 +65,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
     },
     (err) => {
       let msg = "Asset creation failed";
-
       if (err?.response?.data?.error) {
         const error = err.response.data.error;
         if (typeof error === "string") {
@@ -72,7 +79,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
       } else if (err?.message) {
         msg = err.message;
       }
-
       toast.error(`❌ ${msg}`, {
         position: "top-center",
         autoClose: 5000,
@@ -99,17 +105,18 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
       const result = assetSchema.safeParse(value);
       if (!result.success) {
         const zodErrors = result.error.flatten().fieldErrors;
-        type FieldName = keyof typeof zodErrors;
-        (Object.keys(zodErrors) as FieldName[]).forEach((key) => {
-          const message = zodErrors[key]?.[0];
-          if (message) {
-            formApi.setFieldMeta(key, (meta) => ({
-              ...meta,
-              error: message,
-              isTouched: true,
-            }));
-          }
-        });
+        (Object.keys(zodErrors) as (keyof typeof zodErrors)[]).forEach(
+          (key) => {
+            const message = zodErrors[key]?.[0];
+            if (message) {
+              formApi.setFieldMeta(key, (meta) => ({
+                ...meta,
+                error: message,
+                isTouched: true,
+              }));
+            }
+          },
+        );
         return;
       }
       createAsset.mutate(result.data);
@@ -124,6 +131,42 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
     }),
   );
 
+  const handleDepCreated = (newDep: { name: string }) => {
+    refetch?.();
+    const newOption = departments?.find((d) => d.label === newDep.name);
+    if (newOption) {
+      form.setFieldValue("department_id", newOption.value);
+    }
+    toast.success(`Department \"${newDep.name}\" added and selected!`);
+  };
+
+  const handleCatCreated = (newCat: { name: string }) => {
+    refetch?.();
+    const newOption = categories?.find((c) => c.label === newCat.name);
+    if (newOption) {
+      form.setFieldValue("category_id", newOption.value);
+    }
+    toast.success(`Category \"${newCat.name}\" added and selected!`);
+  };
+
+  const handleLocCreated = (newLoc: { name: string }) => {
+    refetch?.();
+    const newOption = locations?.find((l) => l.label === newLoc.name);
+    if (newOption) {
+      form.setFieldValue("location_id", newOption.value);
+    }
+    toast.success(`Location \"${newLoc.name}\" added and selected!`);
+  };
+
+  const handleUserCreated = (newUser: { username: string }) => {
+    refetch?.();
+    const newOption = users?.find((u) => u.label === newUser.username);
+    if (newOption) {
+      form.setFieldValue("assigned_to", newOption.value);
+    }
+    toast.success(`User \"${newUser.username}\" added and selected!`);
+  };
+
   const handleClose = () => {
     form.reset();
     setCreatedAsset(null);
@@ -136,7 +179,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
         <ModalHeader toggle={handleClose}>Add New Asset</ModalHeader>
         <ModalBody>
           <form onSubmit={form.handleSubmit} className="row gy-3">
-            {/* Input fields */}
             <form.Field name="serial_number">
               {(field) => (
                 <div className="col-md-6">
@@ -207,48 +249,91 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
               )}
             </form.Field>
 
-            {/* Selects */}
             <form.Field name="department_id">
               {(field) => (
-                <AsyncSelectInput
-                  className="col-md-6"
-                  field={field}
-                  options={departments || []}
-                  placeholder="Select Department"
-                />
+                <div className="col-md-6">
+                  <label className="form-label d-flex justify-content-between">
+                    <span>Select Department</span>
+                    <Button
+                      color="link"
+                      size="sm"
+                      onClick={() => setDepModalOpen(true)}
+                    >
+                      + Add New
+                    </Button>
+                  </label>
+                  <AsyncSelectInput
+                    field={field}
+                    options={departments || []}
+                    placeholder="Select Department"
+                  />
+                </div>
               )}
             </form.Field>
 
             <form.Field name="location_id">
               {(field) => (
-                <AsyncSelectInput
-                  className="col-md-6"
-                  field={field}
-                  options={locations || []}
-                  placeholder="Select Location"
-                />
+                <div className="col-md-6">
+                  <label className="form-label d-flex justify-content-between">
+                    <span>Select Location</span>
+                    <Button
+                      color="link"
+                      size="sm"
+                      onClick={() => setLocModalOpen(true)}
+                    >
+                      + Add New
+                    </Button>
+                  </label>
+                  <AsyncSelectInput
+                    field={field}
+                    options={locations || []}
+                    placeholder="Select Location"
+                  />
+                </div>
               )}
             </form.Field>
 
             <form.Field name="category_id">
               {(field) => (
-                <AsyncSelectInput
-                  className="col-md-6"
-                  field={field}
-                  options={categories || []}
-                  placeholder="Select Category"
-                />
+                <div className="col-md-6">
+                  <label className="form-label d-flex justify-content-between">
+                    <span>Select Category</span>
+                    <Button
+                      color="link"
+                      size="sm"
+                      onClick={() => setCatModalOpen(true)}
+                    >
+                      + Add New
+                    </Button>
+                  </label>
+                  <AsyncSelectInput
+                    field={field}
+                    options={categories || []}
+                    placeholder="Select Category"
+                  />
+                </div>
               )}
             </form.Field>
 
             <form.Field name="assigned_to">
               {(field) => (
-                <AsyncSelectInput
-                  className="col-md-6"
-                  field={field}
-                  options={users || []}
-                  placeholder="Assign To"
-                />
+                <div className="col-md-6">
+                  <label className="form-label d-flex justify-content-between">
+                    <span>Assign To</span>
+                    <Button
+                      color="link"
+                      size="sm"
+                      onClick={() => setUserModalOpen(true)}
+                    >
+                      + Add New
+                    </Button>
+                  </label>
+                  <AsyncSelectInput
+                    field={field}
+                    options={users || []}
+                    placeholder="Assign To"
+                  />
+                </div>
               )}
             </form.Field>
 
@@ -292,6 +377,27 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
           </Button>
         </ModalFooter>
       </Modal>
+
+      <AddDepartmentModal
+        isOpen={depModalOpen}
+        onClose={() => setDepModalOpen(false)}
+        onSuccess={handleDepCreated}
+      />
+      <AddCategoryModal
+        isOpen={catModalOpen}
+        onClose={() => setCatModalOpen(false)}
+        onSuccess={handleCatCreated}
+      />
+      <AddLocationModal
+        isOpen={locModalOpen}
+        onClose={() => setLocModalOpen(false)}
+        onSuccess={handleLocCreated}
+      />
+      <AddUserModal
+        isOpen={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        onSuccess={handleUserCreated}
+      />
     </>
   );
 };

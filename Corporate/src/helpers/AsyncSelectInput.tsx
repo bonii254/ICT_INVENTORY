@@ -33,7 +33,9 @@ interface AsyncSelectInputProps {
   field: AnyField;
   options: Option[];
   placeholder?: string;
-  maxVisible?: number; // 👈 New prop: control initial visible items
+  label?: string;
+  isSearchable?: boolean;
+  maxVisible?: number;
 }
 
 const AsyncSelectInput = ({
@@ -41,6 +43,8 @@ const AsyncSelectInput = ({
   options,
   className = "",
   placeholder = "Select...",
+  label,
+  isSearchable = true,
   maxVisible = 8, // 👈 Default to 8
 }: AsyncSelectInputProps) => {
   const selectedOption = options.find(
@@ -57,7 +61,7 @@ const AsyncSelectInput = ({
 
   return (
     <div className={className}>
-      <label className="form-label">{placeholder}</label>
+      {label && <label className="form-label">{label}</label>}
       <Select
         classNamePrefix="react-select"
         value={selectedOption || null}
@@ -67,6 +71,7 @@ const AsyncSelectInput = ({
         }}
         placeholder={placeholder}
         isClearable
+        isSearchable={isSearchable}
         filterOption={customFilterOption}
         menuPlacement="auto"
         menuShouldScrollIntoView={false}
