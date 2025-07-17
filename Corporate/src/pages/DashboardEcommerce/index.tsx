@@ -1,24 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { Col, Container, Row } from "reactstrap";
 import Widget from "./Widgets";
-import RecentActivity from "./RecentActivity";
 import RecentAssets from "./RecentAssets";
 import AssetCategorySummary from "./CategoryCount";
 import SalesByLocations from "./SalesByLocations";
 import Section from "./Section";
 import StoreVisits from "./StoreVisits";
-import AddAssetModal from "../../Components/Common/AssetForm";
 import { useUser } from "../../context/UserContext";
 
 const DashboardEcommerce = () => {
   document.title = "Dashboard | fresha - ICT inventory system";
 
-  const [rightColumn, setRightColumn] = useState(false);
-  const [assetModalOpen, setAssetModalOpen] = useState(false);
   const { isLoading } = useUser();
-
-  const toggleRightColumn = () => setRightColumn(!rightColumn);
-  const toggleAssetModal = () => setAssetModalOpen((prev) => !prev);
 
   if (isLoading) return <p>Loading user information...</p>;
 
@@ -28,20 +21,22 @@ const DashboardEcommerce = () => {
         <Row>
           <Col>
             <div className="h-100">
-              <Section
-                rightClickBtn={toggleRightColumn}
-                onAddAsset={toggleAssetModal}
-              />
-              <Row>
+              <Section />
+
+              <Row className="mb-3">
                 <Widget />
               </Row>
-              <Row>
-                <Col xl={8}>
+
+              <Row className="g-3 align-items-stretch">
+                <Col xl={8} className="d-flex">
                   <RecentAssets />
                 </Col>
-                <SalesByLocations />
+                <Col xl={4} className="d-flex">
+                  <SalesByLocations />
+                </Col>
               </Row>
-              <Row>
+
+              <Row className="mt-3">
                 <StoreVisits />
                 <Col xl={8}>
                   <AssetCategorySummary />
@@ -49,14 +44,8 @@ const DashboardEcommerce = () => {
               </Row>
             </div>
           </Col>
-
-          <RecentActivity
-            rightColumn={rightColumn}
-            hideRightColumn={toggleRightColumn}
-          />
         </Row>
       </Container>
-      <AddAssetModal isOpen={assetModalOpen} onClose={toggleAssetModal} />
     </div>
   );
 };

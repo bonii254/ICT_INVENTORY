@@ -1,31 +1,70 @@
 import React from "react";
-import { Card, CardBody, CardHeader } from "reactstrap";
-import { useGetAssets } from "../../hooks/useAssets";
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { Card, CardBody, CardHeader } from "reactstrap";
+import { useGetAssets, Asset } from "../../hooks/useAssets"; // use correct shared type
 
-const RecentAssets = () => {
+const RecentAssets: React.FC = () => {
   const { data: assetData, isLoading } = useGetAssets();
-  const recentAssets =
-    assetData?.assets
-      ?.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      )
-      .slice(0, 5) || [];
 
-  const columns: ColumnDef<any>[] = [
-    { accessorKey: "name", header: "Name" },
-    { accessorKey: "serial_number", header: "Serial Number" },
-    { accessorKey: "model", header: "Model" },
-    { accessorKey: "category", header: "Category" },
-    { accessorKey: "assigned_to", header: "Assigned To" },
-    { accessorKey: "department", header: "Department" },
-    { accessorKey: "status", header: "Status" },
+  const recentAssets: Asset[] = (assetData?.assets || [])
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, 5);
+
+  const columns: ColumnDef<Asset, unknown>[] = [
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: (info) => {
+        const value = info.getValue() as string;
+        return (
+          <span
+            className="text-truncate d-inline-block"
+            style={{ maxWidth: 180 }}
+            title={value}
+          >
+            {value || "—"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "serial_number",
+      header: "Serial Number",
+      cell: (info) => info.getValue() || "—",
+    },
+    {
+      accessorKey: "model",
+      header: "Model",
+      cell: (info) => info.getValue() || "—",
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: (info) => info.getValue() || "—",
+    },
+    {
+      accessorKey: "assigned_to",
+      header: "Assigned To",
+      cell: (info) => info.getValue() || "—",
+    },
+    {
+      accessorKey: "department",
+      header: "Department",
+      cell: (info) => info.getValue() || "—",
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: (info) => info.getValue() || "—",
+    },
   ];
 
   const table = useReactTable({
@@ -35,16 +74,16 @@ const RecentAssets = () => {
   });
 
   return (
-    <Card className="h-100">
-      <CardHeader>
-        <h5 className="card-title mb-0">Recently Added Assets</h5>
+    <Card className="h-100 border-0 shadow-sm">
+      <CardHeader className="bg-light border-bottom d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">🆕 Recently Added Assets</h5>
       </CardHeader>
       <CardBody>
         {isLoading ? (
           <p>Loading...</p>
         ) : (
           <div className="table-responsive">
-            <table className="table align-middle table-bordered table-hover">
+            <table className="table align-middle table-hover table-bordered mb-0">
               <thead className="table-light">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>

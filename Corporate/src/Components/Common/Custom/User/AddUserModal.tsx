@@ -170,7 +170,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                 <AsyncSelectInput
                   field={field}
                   options={departments}
-                  label="Select Department"
                   placeholder="Search or select department"
                   isSearchable={true}
                 />
@@ -185,7 +184,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                 <AsyncSelectInput
                   field={field}
                   options={roles}
-                  label="Select Role"
                   placeholder="Search or select role"
                   isSearchable={true}
                 />

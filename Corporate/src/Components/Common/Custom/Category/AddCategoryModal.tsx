@@ -21,6 +21,10 @@ const categorySchema = z.object({
 
 type Category = z.infer<typeof categorySchema>;
 
+type ApiCategoryResponse = {
+  category: Category;
+};
+
 interface AddCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,31 +38,43 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
 }) => {
   const [createdCategory, setCreatedCategory] = useState<Category | null>(null);
 
-  const createCategory = useApiPost<{ Category: Category }, Category>(
+  const createCategory = useApiPost<ApiCategoryResponse, Category>(
     "/register/category",
-    (res) => {
-      if (!res?.Category) {
-        toast.error("⚠️ Missing 'Category' in response.");
+    async (res) => {
+      const category = res?.category;
+
+      if (!category || !category.name) {
+        toast.error("⚠️ Malformed response: missing category info.");
         return;
       }
-      setCreatedCategory(res.Category);
+
+      setCreatedCategory(category);
       form.reset();
+
       toast.success("✅ Category created successfully.");
-      onSuccess?.(res.Category);
+
+      await onSuccess?.(category);
     },
     (err) => {
-      let msg = "Category creation failed.";
-      if (err?.response?.data) {
-        const { error, errors } = err.response.data;
+      let msg = "Department registration failed";
+      const status = err?.response?.status;
 
-        if (typeof error === "string") msg = error;
-        else if (errors && typeof errors === "object") {
-          msg = Object.entries(errors)
-            .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
-            .join("\n");
-        } else msg = JSON.stringify(err.response.data);
+      if (err?.response?.data?.error) {
+        const error = err.response.data.error;
+
+        if (typeof error === "string") {
+          msg = `${status || "❌"}: ${error}`;
+        } else if (typeof error === "object") {
+          msg =
+            `${status || "❌"}:\n` +
+            Object.entries(error)
+              .map(
+                ([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`,
+              )
+              .join("\n");
+        }
       } else if (err?.message) {
-        msg = err.message;
+        msg = `${status || "❌"}: ${err.message}`;
       }
 
       toast.error(`❌ ${msg}`, {
@@ -94,6 +110,7 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({
         );
         return;
       }
+
       createCategory.mutate(result.data);
     },
   });

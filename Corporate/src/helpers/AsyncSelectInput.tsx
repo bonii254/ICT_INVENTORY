@@ -1,36 +1,14 @@
+import React from "react";
 import Select from "react-select";
-import type { FieldApi } from "@tanstack/react-form";
 
 type Option = {
   label: string;
   value: number;
 };
 
-type AnyField = FieldApi<
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->;
-
 interface AsyncSelectInputProps {
   className?: string;
-  field: AnyField;
+  field: any;
   options: Option[];
   placeholder?: string;
   label?: string;
@@ -38,44 +16,59 @@ interface AsyncSelectInputProps {
   maxVisible?: number;
 }
 
-const AsyncSelectInput = ({
+const AsyncSelectInput: React.FC<AsyncSelectInputProps> = ({
   field,
   options,
   className = "",
   placeholder = "Select...",
   label,
   isSearchable = true,
-  maxVisible = 8, // 👈 Default to 8
-}: AsyncSelectInputProps) => {
-  const selectedOption = options.find(
-    (option) => option.value === field.state.value,
+  maxVisible = 8,
+}) => {
+  const sortedOptions = [...options].sort((a, b) =>
+    a.label.localeCompare(b.label),
   );
 
-  const customFilterOption = (candidate: Option, input: string) => {
-    if (!input) {
-      const index = options.findIndex((opt) => opt.value === candidate.value);
-      return index > -1 && index < maxVisible;
-    }
-    return true;
+  const selectedOption = sortedOptions.find(
+    (opt) => opt.value === field.state.value,
+  );
+
+  const customFilterOption = (
+    candidate: { label: string; value: number },
+    input: string,
+  ): boolean => {
+    if (!input) return true;
+    const normalizedInput = input.toLowerCase();
+    return candidate.label.toLowerCase().includes(normalizedInput);
+  };
+
+  const getFilteredLimitedOptions = (inputValue: string): Option[] => {
+    const filtered = sortedOptions.filter((opt) =>
+      opt.label.toLowerCase().includes(inputValue.toLowerCase()),
+    );
+    return filtered.slice(0, maxVisible);
   };
 
   return (
     <div className={className}>
+      {/* ✅ Conditionally render internal label only if provided */}
       {label && <label className="form-label">{label}</label>}
+
       <Select
         classNamePrefix="react-select"
         value={selectedOption || null}
-        options={options}
-        onChange={(selected: Option | null) => {
-          field.handleChange(selected?.value ?? 0);
-        }}
         placeholder={placeholder}
         isClearable
         isSearchable={isSearchable}
+        onChange={(selected: Option | null) =>
+          field.handleChange(selected?.value ?? 0)
+        }
         filterOption={customFilterOption}
-        menuPlacement="auto"
-        menuShouldScrollIntoView={false}
+        options={sortedOptions}
+        maxMenuHeight={240}
       />
+
+      {/* ✅ Error message if field is touched */}
       {field.state.meta.errors && field.state.meta.isTouched && (
         <div className="text-danger small">{field.state.meta.errors}</div>
       )}

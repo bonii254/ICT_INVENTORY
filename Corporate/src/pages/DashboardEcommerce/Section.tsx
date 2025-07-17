@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Col, Row } from "reactstrap";
 import Flatpickr from "react-flatpickr";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "../../context/UserContext"; // ✅ context user
+import { useUser } from "../../context/UserContext";
 
 const FlatpickrComponent = Flatpickr as unknown as React.ComponentType<any>;
 
-interface SectionProps {
-  rightClickBtn: () => void;
-  onAddAsset: () => void;
-}
-
-const Section: React.FC<SectionProps> = ({ rightClickBtn, onAddAsset }) => {
+const Section: React.FC = () => {
   const [greeting, setGreeting] = useState("");
   const { data: user } = useUser();
 
@@ -62,45 +56,21 @@ const Section: React.FC<SectionProps> = ({ rightClickBtn, onAddAsset }) => {
               Here's what's happening with our inventory today.
             </p>
           </div>
-          <div className="mt-3 mt-lg-0">
-            <form>
-              <Row className="g-3 mb-0 align-items-center">
-                <div className="col-sm-auto">
-                  <div className="input-group">
-                    <FlatpickrComponent
-                      className="form-control border-0 dash-filter-picker shadow"
-                      options={{
-                        mode: "range",
-                        dateFormat: "d M, Y",
-                        defaultDate: [new Date(), new Date()],
-                      }}
-                    />
-                    <div className="input-group-text bg-primary border-primary text-white">
-                      <i className="ri-calendar-2-line"></i>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-auto">
-                  <button
-                    type="button"
-                    className="btn btn-soft-secondary"
-                    onClick={onAddAsset}
-                  >
-                    <i className="ri-add-circle-line align-middle me-1"></i> Add
-                    Product
-                  </button>
-                </div>
-                <div className="col-auto">
-                  <button
-                    type="button"
-                    className="btn btn-soft-success btn-success waves-effect waves-light layout-rightside-btn"
-                    onClick={rightClickBtn}
-                  >
-                    <i className="ri-pulse-line"></i>
-                  </button>
-                </div>
-              </Row>
-            </form>
+
+          <div className="mt-3 mt-lg-0 d-flex align-items-center gap-3">
+            <div className="input-group">
+              <FlatpickrComponent
+                className="form-control border-0 dash-filter-picker shadow"
+                options={{
+                  mode: "range",
+                  dateFormat: "d M, Y",
+                  defaultDate: [new Date(), new Date()],
+                }}
+              />
+              <div className="input-group-text bg-primary border-primary text-white">
+                <i className="ri-calendar-2-line"></i>
+              </div>
+            </div>
           </div>
         </div>
       </Col>

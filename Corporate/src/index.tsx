@@ -4,10 +4,10 @@ import App from "./App";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import { store } from "./store";
 import rootReducer from "./slices";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const store = configureStore({ reducer: rootReducer, devTools: true });
 const queryClient = new QueryClient();
 
 const root = ReactDOM.createRoot(

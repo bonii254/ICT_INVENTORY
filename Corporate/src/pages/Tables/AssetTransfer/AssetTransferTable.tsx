@@ -37,10 +37,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useApiGet } from "../../../helpers/api_helper";
 import { useQueryClient } from "@tanstack/react-query";
-import AddSoftwareModal from "../../../Components/Common/Custom/Software/AddSoftwareModel";
+import AddAssetTransfer from "../../../Components/Common/Custom/AssetTransfer/AddAssetTransferModal";
 import AssetTransferViewModal from "Components/Common/Custom/AssetTransfer/ViewAssetTransferModal";
-import DeleteSoftwareConfirmModal from "Components/Common/Custom/Software/DeleteSoftwareModel";
-import EditSoftwareModal from "../../../Components/Common/Custom/Software/EditSoftwareModal";
+import DeleteAssetTransfer from "Components/Common/Custom/AssetTransfer/DeleteAssetTransferModal";
+import EditAssetTransfer from "../../../Components/Common/Custom/AssetTransfer/EditAssetTransferModal";
 
 const columnHelper = createColumnHelper<any>();
 
@@ -392,7 +392,7 @@ const AssetTransferTable = () => {
             </Button>
           </Col>
         </Row>
-        <AddSoftwareModal
+        <AddAssetTransfer
           isOpen={addModal}
           onClose={() => {
             setAddModal(false);
@@ -404,20 +404,23 @@ const AssetTransferTable = () => {
           toggle={() => setViewModal(false)}
           assetTransfer={selectedAssetTransfer}
         />
-        <DeleteSoftwareConfirmModal
+        <DeleteAssetTransfer
           isOpen={deleteModal}
-          toggle={() => setDeleteModal(false)}
-          software={selectedAssetTransfer}
-          onDeleteSuccess={() => {
-            setDeleteModal(false);
-          }}
+          onClose={() => setDeleteModal(false)}
+          transferId={selectedAssetTransfer?.id ?? null}
+          onSuccess={() => setDeleteModal(false)}
         />
-        <EditSoftwareModal
-          isOpen={editModal}
-          toggle={() => setEditModal(false)}
-          software={selectedAssetTransfer}
-          onEditSuccess={() => {}}
-        />
+        {selectedAssetTransfer && (
+          <EditAssetTransfer
+            isOpen={editModal}
+            onClose={() => setEditModal(false)}
+            data={selectedAssetTransfer}
+            onSuccess={() => {
+              setEditModal(false);
+              queryClient.invalidateQueries({ queryKey: ["assettransfers"] });
+            }}
+          />
+        )}
       </CardBody>
     </Card>
   );

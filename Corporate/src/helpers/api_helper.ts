@@ -162,14 +162,18 @@ export const useApiPost = <TResponse, TPayload>(
   return useMutation<TResponse, any, TPayload>({
     mutationFn: async (payload: TPayload): Promise<TResponse> => {
       const response = await apiClient.post(url, payload);
-      return response as TResponse;
+      return response.data as TResponse;
     },
     onSuccess,
     onError,
   });
 };
 
-export const useApiPut = <T = any>(url: string) => {
+export const useApiPut = <T = any>(
+  url: string,
+  p0: () => void,
+  p1: (err: any) => void,
+) => {
   return useMutation<T, unknown, any>({
     mutationFn: async (data) => {
       const { data: responseData } = await apiClient.put<T>(url, data);

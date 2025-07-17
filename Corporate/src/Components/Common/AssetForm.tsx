@@ -9,15 +9,18 @@ import {
 } from "reactstrap";
 import { useForm } from "@tanstack/react-form";
 import { useStore } from "@tanstack/react-store";
+import { useQueryClient } from "@tanstack/react-query";
 import DatePicker from "react-datepicker";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-datepicker/dist/react-datepicker.css";
+
 import { assetSchema } from "../../schemas/assetSchema";
 import { useAssetOptions } from "../../hooks/useAssetOptions";
 import { useApiPost } from "../../helpers/api_helper";
 import AsyncSelectInput from "../../helpers/AsyncSelectInput";
+
 import AddDepartmentModal from "./Custom/Department/AddDepartmentModal";
 import AddCategoryModal from "./Custom/Category/AddCategoryModal";
 import AddLocationModal from "./Custom/Location/AddLocationModal";
@@ -38,6 +41,11 @@ type CreatedAsset = {
   department: string;
 };
 
+type Option = {
+  label: string;
+  value: number;
+};
+
 interface AddAssetModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -50,6 +58,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
   const [locModalOpen, setLocModalOpen] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
 
+  const queryClient = useQueryClient();
   const { departments, locations, statuses, users, categories, refetch } =
     useAssetOptions();
 
@@ -137,16 +146,21 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
     if (newOption) {
       form.setFieldValue("department_id", newOption.value);
     }
-    toast.success(`Department \"${newDep.name}\" added and selected!`);
+    toast.success(`Department "${newDep.name}" added and selected!`);
   };
 
-  const handleCatCreated = (newCat: { name: string }) => {
+  const handleCatCreated = async (newCat: { name: string }) => {
+    await queryClient.invalidateQueries({ queryKey: ["categories"] });
     refetch?.();
-    const newOption = categories?.find((c) => c.label === newCat.name);
+    const updatedCategories =
+      queryClient.getQueryData<Option[]>(["categories"] as const) ?? [];
+    const newOption = updatedCategories.find((c) => c.label === newCat.name);
     if (newOption) {
       form.setFieldValue("category_id", newOption.value);
+      toast.success(`Category "${newCat.name}" added and selected!`);
+    } else {
+      toast.warning(`Category "${newCat.name}" added, but not yet selectable.`);
     }
-    toast.success(`Category \"${newCat.name}\" added and selected!`);
   };
 
   const handleLocCreated = (newLoc: { name: string }) => {
@@ -155,7 +169,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
     if (newOption) {
       form.setFieldValue("location_id", newOption.value);
     }
-    toast.success(`Location \"${newLoc.name}\" added and selected!`);
+    toast.success(`Location "${newLoc.name}" added and selected!`);
   };
 
   const handleUserCreated = (newUser: { username: string }) => {
@@ -164,7 +178,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
     if (newOption) {
       form.setFieldValue("assigned_to", newOption.value);
     }
-    toast.success(`User \"${newUser.username}\" added and selected!`);
+    toast.success(`User "${newUser.username}" added and selected!`);
   };
 
   const handleClose = () => {
@@ -217,6 +231,10 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                   )
                 }
                 dateFormat="yyyy-MM-dd"
+                showYearDropdown
+                showMonthDropdown
+                scrollableYearDropdown
+                yearDropdownItemNumber={100}
               />
             </div>
 
@@ -232,6 +250,10 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                   )
                 }
                 dateFormat="yyyy-MM-dd"
+                showYearDropdown
+                showMonthDropdown
+                scrollableYearDropdown
+                yearDropdownItemNumber={100}
               />
             </div>
 
@@ -344,6 +366,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                   field={field}
                   options={statuses || []}
                   placeholder="Select Status"
+                  label="Select Status"
                 />
               )}
             </form.Field>
@@ -378,6 +401,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
         </ModalFooter>
       </Modal>
 
+      {/* Linked modals */}
       <AddDepartmentModal
         isOpen={depModalOpen}
         onClose={() => setDepModalOpen(false)}

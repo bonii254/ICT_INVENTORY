@@ -8,13 +8,10 @@ import {
   Spinner,
 } from "reactstrap";
 import { useForm } from "@tanstack/react-form";
-import { toast } from "react-toastify";
 import { z } from "zod";
-
-import { departmentSchema } from "../../../../schemas/departmentSchema";
+import { toast } from "react-toastify";
 import { useApiPost } from "../../../../helpers/api_helper";
-
-import "react-toastify/dist/ReactToastify.css";
+import { departmentSchema } from "../../../../schemas/departmentSchema";
 
 type Department = {
   name: string;
@@ -35,32 +32,48 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = ({
     null,
   );
 
-  const createDepartment = useApiPost<
-    { Department: Department },
+  const registerDepartment = useApiPost<
+    { department: Department },
     z.infer<typeof departmentSchema>
   >(
     "/register/department",
     (res) => {
-      setCreatedDepartment(res.Department);
+      const dep = res?.department;
+      if (!dep || !dep.name) {
+        toast.warning(
+          "✅ Department created, but couldn't read name from response.",
+        );
+        onSuccess?.({ name: "Unknown" });
+        return;
+      }
+
+      setCreatedDepartment(dep);
+      toast.success(`✅ Department "${dep.name}" registered.`);
       form.reset();
-      onSuccess?.(res.Department);
-      toast.success("✅ Department registered successfully.");
+      onSuccess?.(dep);
+      console.log("Department response:", res);
     },
     (err) => {
       let msg = "Department registration failed";
       if (err?.response?.data?.error) {
         const error = err.response.data.error;
-        msg = typeof error === "string" ? error : JSON.stringify(error);
+        if (typeof error === "string") {
+          msg = error;
+        } else if (typeof error === "object") {
+          msg = Object.entries(error)
+            .map(
+              ([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`,
+            )
+            .join("\n");
+        }
       } else if (err?.message) {
         msg = err.message;
       }
-
       toast.error(`❌ ${msg}`, {
         position: "top-center",
         autoClose: 5000,
         theme: "colored",
       });
-
       console.error("Department registration failed:", err);
     },
   );
@@ -72,21 +85,22 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = ({
     onSubmit: async ({ value, formApi }) => {
       const result = departmentSchema.safeParse(value);
       if (!result.success) {
-        const errors = result.error.flatten().fieldErrors;
-        (Object.keys(errors) as (keyof typeof errors)[]).forEach((key) => {
-          const message = errors[key]?.[0];
-          if (message) {
-            formApi.setFieldMeta(key, (meta) => ({
-              ...meta,
-              error: message,
-              isTouched: true,
-            }));
-          }
-        });
+        const zodErrors = result.error.flatten().fieldErrors;
+        (Object.keys(zodErrors) as (keyof typeof zodErrors)[]).forEach(
+          (key) => {
+            const message = zodErrors[key]?.[0];
+            if (message) {
+              formApi.setFieldMeta(key, (meta) => ({
+                ...meta,
+                error: message,
+                isTouched: true,
+              }));
+            }
+          },
+        );
         return;
       }
-
-      createDepartment.mutate(result.data);
+      registerDepartment.mutate(result.data);
     },
   });
 
@@ -119,17 +133,6 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = ({
             )}
           </form.Field>
         </form>
-
-        {createdDepartment && (
-          <div className="mt-4 alert alert-success">
-            <h5>✅ Department Registered</h5>
-            <ul className="mb-0">
-              <li>
-                <strong>Name:</strong> {createdDepartment.name}
-              </li>
-            </ul>
-          </div>
-        )}
       </ModalBody>
 
       <ModalFooter>
@@ -140,9 +143,9 @@ const AddDepartmentModal: React.FC<AddDepartmentModalProps> = ({
           type="submit"
           color="primary"
           onClick={() => form.handleSubmit()}
-          disabled={createDepartment.isPending}
+          disabled={registerDepartment.isPending}
         >
-          {createDepartment.isPending ? <Spinner size="sm" /> : "Register"}
+          {registerDepartment.isPending ? <Spinner size="sm" /> : "Register"}
         </Button>
       </ModalFooter>
     </Modal>
