@@ -44,6 +44,7 @@
     "echarts": "^5.5.1",
     "echarts-for-react": "^3.0.2",
     "emoji-picker-react": "^4.12.0",
+    "exceljs": "^4.4.0",
     "feather-icons-react": "^0.7.0",
     "file-saver": "^2.0.5",
     "filepond": "^4.31.4",
@@ -136,6 +137,7 @@
     "typescript": "^5.3.3"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/react-modal": "^3.16.3",
     "@types/react-select": "^5.0.1"
   }

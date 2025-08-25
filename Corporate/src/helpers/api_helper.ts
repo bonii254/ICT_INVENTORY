@@ -169,18 +169,24 @@ export const useApiPost = <TResponse, TPayload>(
   });
 };
 
-export const useApiPut = <T = any>(
+export function useApiPut<T = any>(
   url: string,
-  p0: () => void,
-  p1: (err: any) => void,
-) => {
-  return useMutation<T, unknown, any>({
-    mutationFn: async (data) => {
-      const { data: responseData } = await apiClient.put<T>(url, data);
-      return responseData;
+  onSuccess?: (data: any) => void,
+  onError?: (error: any) => void,
+) {
+  return useMutation({
+    mutationFn: async (body: T) => {
+      const res = await apiClient.put(url, body);
+      return res.data;
+    },
+    onSuccess: (data) => {
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (err) => {
+      if (onError) onError(err);
     },
   });
-};
+}
 
 export const useApiDelete = <T = any>(url: string) => {
   return useMutation<T, unknown, void>({

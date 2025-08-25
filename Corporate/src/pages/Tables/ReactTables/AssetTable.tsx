@@ -1,8 +1,10 @@
 // File: src/pages/Assets/AssetTable.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import AssetViewModal from "../../../Components/Common/Assets/AssetViewModel";
 import DeleteConfirmModal from "../../../Components/Common/Assets/DeleteConfirmModal";
 import AddAssetModal from "../../../Components/Common/AssetForm";
+import EditAssetModal from "Components/Common/Custom/Asset/EditAssetModal";
+import companylogo from "../../../assets/images/Logo1.jpg";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useReactTable,
@@ -10,7 +12,6 @@ import {
   getSortedRowModel,
   createColumnHelper,
   flexRender,
-  getFilteredRowModel,
 } from "@tanstack/react-table";
 import {
   Button,
@@ -29,27 +30,38 @@ import {
   ModalBody,
   ModalFooter,
 } from "reactstrap";
-import {
-  Plus,
-  Save,
-  FileText,
-  Printer,
-  MoreVertical,
-  Sliders,
-} from "lucide-react";
-import { CSVLink } from "react-csv";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { Plus, Printer, MoreVertical, Sliders } from "lucide-react";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { useApiGet } from "../../../helpers/api_helper";
 import type { SortingState } from "@tanstack/react-table";
 
 const columnHelper = createColumnHelper<any>();
+
+// highlight helper
+const highlightMatch = (text: string, filter: string) => {
+  if (!filter || !text) return text;
+  const regex = new RegExp(`(${filter})`, "gi");
+  return text
+    .toString()
+    .split(regex)
+    .map((part, i) =>
+      regex.test(part) ? (
+        <mark key={i} style={{ backgroundColor: "yellow", padding: 0 }}>
+          {part}
+        </mark>
+      ) : (
+        part
+      ),
+    );
+};
 
 const AssetTable = () => {
   const queryClient = useQueryClient();
   const [viewModal, setViewModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [addModal, setAddModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
 
   const [pageIndex, setPageIndex] = useState(0);
@@ -59,18 +71,59 @@ const AssetTable = () => {
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>(
     {},
   );
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [globalFilter, setGlobalFilter] = useState("");
   const [showColumnModal, setShowColumnModal] = useState(false);
 
+  // Define all possible columns
+  const allColumnKeys = [
+    "name",
+    "asset tag",
+    "serial_number",
+    "model",
+    "category",
+    "assigned_to",
+    "location",
+    "department",
+    "status",
+    "purchase_date",
+    "warranty_expiry",
+    "configuration",
+  ];
+
+  // Define which should be hidden by default
+  const defaultHiddenColumns = [
+    "asset_tag",
+    "status",
+    "purchase_date",
+    "warranty_expiry",
+    "configuration",
+  ];
+
+  // Persist column visibility in localStorage
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
+    () => {
+      const saved = localStorage.getItem("visibleColumns");
+      if (saved) return JSON.parse(saved);
+      return Object.fromEntries(defaultHiddenColumns.map((c) => [c, false]));
+    },
+  );
+
+  useEffect(() => {
+    localStorage.setItem("visibleColumns", JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
+
   const { data, isLoading } = useApiGet<any>(
-    ["assets", pageIndex, perPage],
-    `/assets/search?page=${pageIndex + 1}&per_page=${perPage}`,
+    ["assets"],
+    `/assets/search?all=true`, // fetch full dataset
     {},
     true,
     { refetchInterval: 10000 },
   );
+
+  // Reset to first page whenever filters or global search change
+  useEffect(() => {
+    setPageIndex(0);
+  }, [columnFilters, globalFilter]);
 
   const toggleSelectRow = (id: number) => {
     setSelectedRows((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -92,20 +145,37 @@ const AssetTable = () => {
     }
   };
 
-  const allColumnKeys = [
-    "name",
-    "asset tag",
-    "serial_number",
-    "model",
-    "category",
-    "assigned_to",
-    "location",
-    "department",
-    "status",
-    "purchase_date",
-    "warranty_expiry",
-    "configuration",
-  ];
+  // Filtered + repaginated data
+  const filteredData = useMemo(() => {
+    if (!data?.assets) return [];
+
+    return data.assets.filter((row: any) => {
+      // global filter across all fields
+      const globalMatch = globalFilter
+        ? Object.values(row)
+            .join(" ")
+            .toLowerCase()
+            .includes(globalFilter.toLowerCase())
+        : true;
+
+      // per-column filters
+      const columnMatch = Object.entries(columnFilters).every(
+        ([key, value]) =>
+          !value ||
+          row[key]?.toString().toLowerCase().includes(value.toLowerCase()),
+      );
+
+      return globalMatch && columnMatch;
+    });
+  }, [data, columnFilters, globalFilter]);
+
+  // Manual pagination on filtered data
+  const paginatedData = useMemo(() => {
+    const start = pageIndex * perPage;
+    return filteredData.slice(start, start + perPage);
+  }, [filteredData, pageIndex, perPage]);
+
+  const pageCount = Math.ceil(filteredData.length / perPage);
 
   const columns = useMemo(() => {
     const baseColumns = [
@@ -150,7 +220,12 @@ const AssetTable = () => {
                 />
               </div>
             ),
-            cell: (info) => info.getValue(),
+            cell: (info) => {
+              const value = info.getValue();
+              const colId = info.column.id;
+              const filter = columnFilters[colId] || globalFilter;
+              return <span>{highlightMatch(value, filter)}</span>;
+            },
           }),
         ),
       columnHelper.display({
@@ -170,7 +245,15 @@ const AssetTable = () => {
               >
                 View
               </DropdownItem>
-              <DropdownItem>Edit</DropdownItem>
+              <DropdownItem
+                className="text-danger"
+                onClick={() => {
+                  setSelectedAsset(row.original);
+                  setEditModal(true);
+                }}
+              >
+                Edit
+              </DropdownItem>
               <DropdownItem
                 className="text-danger"
                 onClick={() => {
@@ -186,48 +269,159 @@ const AssetTable = () => {
       }),
     ];
     return baseColumns;
-  }, [selectedRows, isAllSelected, columnFilters, visibleColumns]);
-
-  const filteredData = useMemo(() => {
-    if (!data?.assets) return [];
-    return data.assets.filter((row: any) => {
-      return Object.entries(columnFilters).every(([key, value]) => {
-        return row[key]?.toString().toLowerCase().includes(value.toLowerCase());
-      });
-    });
-  }, [data, columnFilters]);
+  }, [
+    selectedRows,
+    isAllSelected,
+    columnFilters,
+    visibleColumns,
+    globalFilter,
+  ]);
 
   const table = useReactTable({
-    data: filteredData,
+    data: paginatedData,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
-    pageCount: data?.pages || 1,
+    pageCount,
   });
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    const headers = columns
-      .filter((col) => col.id !== "actions" && col.id !== "select")
-      .map((col) => (typeof col.header === "string" ? col.header : ""));
-    const body = table.getRowModel().rows.map((row) =>
-      row
-        .getVisibleCells()
-        .filter(
-          (cell) => cell.column.id !== "actions" && cell.column.id !== "select",
-        )
-        .map((cell) => String(cell.getValue())),
+  // ✅ Export current filtered data to Excel
+  // ✅ Export current filtered data to Excel
+  // ✅ Export current filtered data to Excel with logo + company name
+  // ✅ Export current filtered data to Excel with logo + company name
+  // ✅ Export current filtered data to Excel with logo + company name
+  const exportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Assets");
+
+    // ===== 1. Insert Logo (only col A) =====
+    try {
+      const response = await fetch(companylogo);
+      const logoBuffer = await response.arrayBuffer();
+
+      const imageId = workbook.addImage({
+        buffer: logoBuffer,
+        extension: "png",
+      });
+
+      worksheet.mergeCells("A1:A3"); // logo in col A
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: 0 },
+        ext: { width: 80, height: 40 },
+      });
+    } catch (err) {
+      console.warn("⚠️ Failed to load logo:", err);
+    }
+
+    // ===== 2. Prepare Headers =====
+    const exportableCols = columns.filter(
+      (col: any) => col.id !== "actions" && col.id !== "select",
     );
 
-    autoTable(doc, {
-      head: [headers],
-      body: body as string[][],
+    const headers = exportableCols.map((col: any) => {
+      if (typeof col.header === "string" && col.header.trim() !== "") {
+        return col.header;
+      }
+      const id = col.accessorKey || col.id || "";
+      return id
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (str: string) => str.toUpperCase());
     });
 
-    doc.save("assets.pdf");
+    // ===== 3. Company Name (dynamic merge) =====
+    const lastColLetter = worksheet.getColumn(headers.length + 1).letter;
+    // +1 because col A is logo, headers start from col B
+    worksheet.mergeCells(`B1:${lastColLetter}3`);
+
+    const companyCell = worksheet.getCell("B1");
+    companyCell.value = "GITHUNGURI DAIRY FARMERS COOPERATIVE SOCIETY";
+    companyCell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+      wrapText: true,
+    };
+    companyCell.font = { size: 18, bold: true };
+    companyCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFEFEFEF" },
+    };
+    companyCell.border = { bottom: { style: "thin" } };
+
+    worksheet.addRow([]);
+
+    // ===== 4. Table Headers =====
+    worksheet.addRow(headers);
+
+    const headerRow = worksheet.lastRow;
+    if (headerRow) {
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, size: 12 };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFDDDDDD" },
+        };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      worksheet.views = [{ state: "frozen", ySplit: headerRow.number }];
+    }
+
+    // ===== 5. Data Rows =====
+    if (filteredData && filteredData.length > 0) {
+      filteredData.forEach((row: any) => {
+        const rowData = exportableCols.map((col: any) => {
+          const key = col.accessorKey || col.id;
+          const val = row[key];
+          return val !== undefined && val !== null ? val : "";
+        });
+        worksheet.addRow(rowData);
+      });
+    } else {
+      worksheet.addRow(["⚠️ No data available"]);
+    }
+
+    // Style data rows
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber > 4) {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          };
+        });
+      }
+    });
+
+    // ===== 6. Auto-fit columns (capped) =====
+    worksheet.columns?.forEach((col) => {
+      let maxLength = 10;
+      col.eachCell?.({ includeEmpty: true }, (cell) => {
+        const len = cell.value ? cell.value.toString().length : 0;
+        if (len > maxLength) maxLength = len;
+      });
+      col.width = Math.min(Math.max(maxLength + 2, 10), 30);
+    });
+
+    // ===== 7. Save File =====
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), "assets.xlsx");
   };
 
   return (
@@ -237,34 +431,27 @@ const AssetTable = () => {
           <Col>
             <h5 className="mb-0">Assets</h5>
           </Col>
-          <Col className="text-end d-flex justify-content-end gap-2">
+          <Col className="d-flex justify-content-end gap-2">
             <Button color="primary" onClick={() => setAddModal(true)}>
               <Plus size={16} className="me-1" /> Add
             </Button>
             <Button color="secondary" onClick={() => setShowColumnModal(true)}>
               <Sliders size={16} className="me-1" /> Columns
             </Button>
-            <CSVLink
-              data={table
-                .getRowModel()
-                .rows.map((row) =>
-                  Object.fromEntries(
-                    row
-                      .getVisibleCells()
-                      .map((cell) => [cell.column.id, cell.getValue()]),
-                  ),
-                )}
-              filename="assets.csv"
-              className="btn btn-outline-secondary"
-            >
-              <Save size={14} className="me-1" /> CSV
-            </CSVLink>
-            <Button color="outline-secondary" onClick={exportPDF}>
-              <FileText size={14} className="me-1" /> PDF
+            <Button color="outline-secondary" onClick={exportExcel}>
+              <Printer size={14} className="me-1" /> Export Excel
             </Button>
-            <Button color="outline-secondary" onClick={() => window.print()}>
-              <Printer size={14} className="me-1" /> Print
-            </Button>
+          </Col>
+        </Row>
+        <Row className="mb-3">
+          <Col>
+            <Input
+              bsSize="sm"
+              placeholder="Search assets..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              style={{ width: "30%" }}
+            />
           </Col>
         </Row>
 
@@ -360,8 +547,9 @@ const AssetTable = () => {
             <Row className="mt-3 align-items-center">
               <Col md="6">
                 <div>
-                  Page {pageIndex + 1} of {data?.pages || 1} | Showing{" "}
-                  {filteredData?.length || 0} of {data?.total || 0} assets
+                  Page {pageIndex + 1} of {pageCount} | Showing{" "}
+                  {paginatedData.length} of {filteredData.length} filtered
+                  assets
                 </div>
               </Col>
               <Col md="6" className="text-end">
@@ -378,10 +566,10 @@ const AssetTable = () => {
                   <Button
                     onClick={() =>
                       setPageIndex((prev) =>
-                        prev + 1 < (data?.pages || 1) ? prev + 1 : prev,
+                        prev + 1 < pageCount ? prev + 1 : prev,
                       )
                     }
-                    disabled={pageIndex + 1 >= (data?.pages || 1)}
+                    disabled={pageIndex + 1 >= pageCount}
                     size="sm"
                   >
                     Next
@@ -391,6 +579,7 @@ const AssetTable = () => {
             </Row>
           </>
         )}
+
         <AssetViewModal
           isOpen={viewModal}
           toggle={() => setViewModal(false)}
@@ -405,6 +594,17 @@ const AssetTable = () => {
             setDeleteModal(false);
           }}
         />
+
+        <EditAssetModal
+          isOpen={editModal}
+          toggle={() => setEditModal(false)}
+          asset={selectedAsset}
+          onEditSuccess={() => {
+            setEditModal(false);
+            queryClient.invalidateQueries({ queryKey: ["assets"] });
+          }}
+        />
+
         <AddAssetModal
           isOpen={addModal}
           onClose={() => {
