@@ -14,6 +14,7 @@ interface AsyncSelectInputProps {
   label?: string;
   isSearchable?: boolean;
   maxVisible?: number;
+  onFocus?: () => void;
 }
 
 const AsyncSelectInput: React.FC<AsyncSelectInputProps> = ({
@@ -24,6 +25,7 @@ const AsyncSelectInput: React.FC<AsyncSelectInputProps> = ({
   label,
   isSearchable = true,
   maxVisible = 8,
+  onFocus,
 }) => {
   const sortedOptions = [...options].sort((a, b) =>
     a.label.localeCompare(b.label),

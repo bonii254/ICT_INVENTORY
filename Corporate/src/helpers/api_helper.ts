@@ -169,15 +169,15 @@ export const useApiPost = <TResponse, TPayload>(
   });
 };
 
-export function useApiPut<T = any>(
+export function useApiPut<TRequest = any, TResponse = any>(
   url: string,
-  onSuccess?: (data: any) => void,
+  onSuccess?: (data: TResponse) => void,
   onError?: (error: any) => void,
 ) {
-  return useMutation({
-    mutationFn: async (body: T) => {
+  return useMutation<TResponse, any, TRequest>({
+    mutationFn: async (body: TRequest) => {
       const res = await apiClient.put(url, body);
-      return res.data;
+      return res.data as TResponse;
     },
     onSuccess: (data) => {
       if (onSuccess) onSuccess(data);

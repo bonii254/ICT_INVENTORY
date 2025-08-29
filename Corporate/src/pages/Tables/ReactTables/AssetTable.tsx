@@ -114,7 +114,7 @@ const AssetTable = () => {
 
   const { data, isLoading } = useApiGet<any>(
     ["assets"],
-    `/assets/search?all=true`, // fetch full dataset
+    `/assets`, // fetch full dataset
     {},
     true,
     { refetchInterval: 10000 },
@@ -597,7 +597,7 @@ const AssetTable = () => {
 
         <EditAssetModal
           isOpen={editModal}
-          toggle={() => setEditModal(false)}
+          onClose={() => setEditModal(false)}
           asset={selectedAsset}
           onEditSuccess={() => {
             setEditModal(false);

@@ -14,15 +14,17 @@ export const assetSchema = z.object({
 });
 export type AssetFormPayload = z.infer<typeof assetSchema>;
 
-export const updateAssetSchema = z.object({
-  serial_number: z.string().optional(),
-  model_number: z.string().optional(),
-  purchase_date: z.string().nullable().optional(),
-  warranty_expiry: z.string().nullable().optional(),
+export const assetUpdateSchema = z.object({
+  serial_number: z.string().min(1, "Serial number is required").optional(),
+  model_number: z.string().min(1, "Model number is required").optional(),
+  purchase_date: z.string().min(1, "Purchase date is required").optional(),
+  warranty_expiry: z.string().min(1, "Warranty expiry is required").optional(),
   configuration: z.string().optional(),
-  department_id: z.number().optional(),
-  location_id: z.number().optional(),
-  category_id: z.number().optional(),
-  assigned_to: z.number().optional(),
-  status_id: z.number().optional(),
+  department_id: z.number().min(1, "Select department").optional(),
+  location_id: z.number().min(1, "Select location").optional(),
+  category_id: z.number().min(1, "Select category").optional(),
+  assigned_to: z.number().min(1, "Assign to someone").optional(),
+  status_id: z.number().min(1, "Select status").optional(),
 });
+
+export type AssetUpdatePayload = z.infer<typeof assetUpdateSchema>;

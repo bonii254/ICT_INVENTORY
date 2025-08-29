@@ -16,7 +16,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-datepicker/dist/react-datepicker.css";
 
-import { updateAssetSchema } from "../../../../schemas/assetSchema";
+import { assetUpdateSchema } from "../../../../schemas/assetSchema";
 import { useAssetOptions } from "../../../../hooks/useAssetOptions";
 import { useApiPut } from "../../../../helpers/api_helper";
 import AsyncSelectInput from "../../../../helpers/AsyncSelectInput";
@@ -26,18 +26,33 @@ import AddCategoryModal from "../Category/AddCategoryModal";
 import AddLocationModal from "../Location/AddLocationModal";
 import AddUserModal from "../User/AddUserModal";
 
-type Option = { label: string; value: number };
+// ✅ Asset type
+type Asset = {
+  id: number;
+  serial_number?: string;
+  model_number?: string;
+  purchase_date?: string;
+  warranty_expiry?: string;
+  configuration?: string;
+  department_id?: number;
+  location_id?: number;
+  category_id?: number;
+  assigned_to?: number;
+  status_id?: number;
+};
 
-interface EditAssetModalProps {
+export type AssetFormValues = Omit<Asset, "id">;
+
+interface UpdateAssetModalProps {
   isOpen: boolean;
-  toggle: () => void;
-  asset: any | null;
-  onEditSuccess: () => void;
+  onClose: () => void;
+  asset: Asset | null;
+  onEditSuccess?: () => void;
 }
 
-const EditAssetModal: React.FC<EditAssetModalProps> = ({
+const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
   isOpen,
-  toggle,
+  onClose,
   asset,
   onEditSuccess,
 }) => {
@@ -46,23 +61,26 @@ const EditAssetModal: React.FC<EditAssetModalProps> = ({
   const [locModalOpen, setLocModalOpen] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
 
+  const queryClient = useQueryClient();
   const { departments, locations, statuses, users, categories, refetch } =
     useAssetOptions();
 
-  // mutation for update
-  const updateAsset = useApiPut<z.infer<typeof updateAssetSchema>>(
-    asset ? `/update/asset/${asset.id}` : "",
+  const updateAsset = useApiPut<Partial<Asset>, any>(
+    asset?.id ? `/update/asset/${asset.id}` : "",
     () => {
       toast.success("✅ Asset updated successfully.");
-      onEditSuccess();
-      form.reset();
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      onClose();
+      if (onEditSuccess) onEditSuccess();
     },
     (err) => {
       let msg = "Asset update failed";
+
       if (err?.response?.data?.error) {
         const error = err.response.data.error;
-        if (typeof error === "string") msg = error;
-        else if (typeof error === "object") {
+        if (typeof error === "string") {
+          msg = error;
+        } else {
           msg = Object.entries(error)
             .map(
               ([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`,
@@ -72,242 +90,240 @@ const EditAssetModal: React.FC<EditAssetModalProps> = ({
       } else if (err?.message) {
         msg = err.message;
       }
-      toast.error(`❌ ${msg}`, { position: "top-center", autoClose: 5000 });
+
+      toast.error(`❌ ${msg}`, {
+        position: "top-center",
+        autoClose: 5000,
+        theme: "colored",
+      });
+      console.error("Asset update failed:", err);
     },
   );
 
-  const form = useForm({
+  // ✅ Strongly typed form with `undefined` defaults
+  const form = useForm<
+    AssetFormValues,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any
+  >({
     defaultValues: {
-      serial_number: "",
-      model_number: "",
-      purchase_date: "",
-      warranty_expiry: "",
-      configuration: "",
-      department_id: 0,
-      location_id: 0,
-      category_id: 0,
-      assigned_to: 0,
-      status_id: 0,
+      serial_number: undefined,
+      model_number: undefined,
+      purchase_date: undefined,
+      warranty_expiry: undefined,
+      configuration: undefined,
+      department_id: undefined,
+      location_id: undefined,
+      category_id: undefined,
+      assigned_to: undefined,
+      status_id: undefined,
     },
-    onSubmit: async ({ value, formApi }) => {
-      const result = updateAssetSchema.safeParse(value);
+    onSubmit: async ({ value }) => {
+      const result = assetUpdateSchema.safeParse(value);
       if (!result.success) {
-        const zodErrors = result.error.flatten().fieldErrors;
-        (Object.keys(zodErrors) as (keyof typeof zodErrors)[]).forEach(
+        // show validation errors
+        toast.error("❌ Validation failed. Please check inputs.", {
+          position: "top-center",
+          autoClose: 4000,
+          theme: "colored",
+        });
+        return;
+      }
+
+      const payload: Partial<Asset> = {};
+
+      if (asset) {
+        (Object.keys(result.data) as (keyof AssetFormValues)[]).forEach(
           (key) => {
-            const message = zodErrors[key]?.[0];
-            if (message) {
-              formApi.setFieldMeta(key, (meta) => ({
-                ...meta,
-                error: message,
-                isTouched: true,
-              }));
+            const newVal = result.data[key];
+            const oldVal = asset[key];
+            // ✅ Only include fields that changed AND are defined
+            if (newVal !== undefined && newVal !== "" && newVal !== oldVal) {
+              payload[key] = newVal as any;
             }
           },
         );
+      } else {
+        Object.assign(payload, result.data);
+      }
+
+      // ✅ If no changes, don't call API
+      if (Object.keys(payload).length === 0) {
+        toast.info("No changes detected.", {
+          position: "top-center",
+          autoClose: 3000,
+          theme: "colored",
+        });
         return;
       }
-      if (asset) {
-        updateAsset.mutate(result.data);
-      }
+
+      updateAsset.mutate(payload);
     },
   });
 
-  const { purchase_date, warranty_expiry } = useStore(
-    form.baseStore,
-    (s: any) => ({
-      purchase_date: s.values.purchase_date,
-      warranty_expiry: s.values.warranty_expiry,
-    }),
-  );
-
-  // ✅ hydrate form when asset changes
+  // ✅ Prefill form when editing existing asset
   useEffect(() => {
-    if (asset && isOpen) {
-      form.setFieldValue("serial_number", asset.serial_number || "");
-      form.setFieldValue("model_number", asset.model_number || "");
-      form.setFieldValue("purchase_date", asset.purchase_date || "");
-      form.setFieldValue("warranty_expiry", asset.warranty_expiry || "");
-      form.setFieldValue("configuration", asset.configuration || "");
-      form.setFieldValue("department_id", asset.department_id || 0);
-      form.setFieldValue("location_id", asset.location_id || 0);
-      form.setFieldValue("category_id", asset.category_id || 0);
-      form.setFieldValue("assigned_to", asset.assigned_to || 0);
-      form.setFieldValue("status_id", asset.status_id || 0);
+    if (asset) {
+      form.reset({
+        serial_number: asset.serial_number || undefined,
+        model_number: asset.model_number || undefined,
+        purchase_date: asset.purchase_date || undefined,
+        warranty_expiry: asset.warranty_expiry || undefined,
+        configuration: asset.configuration || undefined,
+        department_id: asset.department_id || undefined,
+        location_id: asset.location_id || undefined,
+        category_id: asset.category_id || undefined,
+        assigned_to: asset.assigned_to || undefined,
+        status_id: asset.status_id || undefined,
+      });
     }
-  }, [asset, isOpen]);
+  }, [asset, form]);
+
+  const { purchase_date, warranty_expiry } = useStore(form.baseStore, (s) => ({
+    purchase_date: s.values.purchase_date,
+    warranty_expiry: s.values.warranty_expiry,
+  }));
+
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
 
   return (
     <>
-      <Modal isOpen={isOpen} toggle={toggle} centered size="lg" fade>
-        <ModalHeader toggle={toggle}>Edit Asset</ModalHeader>
+      <Modal isOpen={isOpen} toggle={handleClose} centered size="lg" fade>
+        <ModalHeader toggle={handleClose}>Update Asset</ModalHeader>
         <ModalBody>
           <form onSubmit={form.handleSubmit} className="row gy-3">
-            <form.Field name="serial_number">
-              {(field) => (
-                <div className="col-md-6">
-                  <label className="form-label">Serial Number</label>
-                  <input
-                    className="form-control"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </div>
-              )}
-            </form.Field>
+            {(
+              ["serial_number", "model_number", "configuration"] as Array<
+                keyof AssetFormValues
+              >
+            ).map((fieldName) => (
+              <form.Field key={fieldName} name={fieldName}>
+                {(field) => (
+                  <div
+                    className={
+                      fieldName === "configuration" ? "col-12" : "col-md-6"
+                    }
+                  >
+                    <label className="form-label">
+                      {fieldName.replace("_", " ").toUpperCase()}
+                    </label>
+                    {fieldName === "configuration" ? (
+                      <textarea
+                        rows={3}
+                        className="form-control"
+                        value={field.state.value || ""}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                      />
+                    ) : (
+                      <input
+                        className="form-control"
+                        value={field.state.value || ""}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                      />
+                    )}
+                  </div>
+                )}
+              </form.Field>
+            ))}
 
-            <form.Field name="model_number">
-              {(field) => (
-                <div className="col-md-6">
-                  <label className="form-label">Model Number</label>
-                  <input
-                    className="form-control"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </div>
-              )}
-            </form.Field>
+            {/* Date pickers */}
+            {[
+              {
+                name: "purchase_date",
+                label: "Purchase Date",
+                value: purchase_date,
+              },
+              {
+                name: "warranty_expiry",
+                label: "Warranty Expiry",
+                value: warranty_expiry,
+              },
+            ].map(({ name, label, value }) => (
+              <div className="col-md-6" key={name}>
+                <label className="form-label">{label}</label>
+                <DatePicker
+                  className="form-control"
+                  selected={value ? new Date(value) : null}
+                  onChange={(date) =>
+                    form.setFieldValue(
+                      name as keyof AssetFormValues,
+                      date?.toISOString().split("T")[0] || undefined,
+                    )
+                  }
+                  dateFormat="yyyy-MM-dd"
+                  showYearDropdown
+                  showMonthDropdown
+                  scrollableYearDropdown
+                  yearDropdownItemNumber={100}
+                />
+              </div>
+            ))}
 
-            <div className="col-md-6">
-              <label className="form-label">Purchase Date</label>
-              <DatePicker
-                className="form-control"
-                selected={purchase_date ? new Date(purchase_date) : null}
-                onChange={(date) =>
-                  form.setFieldValue(
-                    "purchase_date",
-                    date?.toISOString().split("T")[0] || "",
-                  )
-                }
-                dateFormat="yyyy-MM-dd"
-                showYearDropdown
-                showMonthDropdown
-                scrollableYearDropdown
-              />
-            </div>
+            {/* Select dropdowns */}
+            {[
+              {
+                name: "department_id",
+                label: "Department",
+                options: departments,
+                modalOpen: depModalOpen,
+                setModalOpen: setDepModalOpen,
+              },
+              {
+                name: "location_id",
+                label: "Location",
+                options: locations,
+                modalOpen: locModalOpen,
+                setModalOpen: setLocModalOpen,
+              },
+              {
+                name: "category_id",
+                label: "Category",
+                options: categories,
+                modalOpen: catModalOpen,
+                setModalOpen: setCatModalOpen,
+              },
+              {
+                name: "assigned_to",
+                label: "User",
+                options: users,
+                modalOpen: userModalOpen,
+                setModalOpen: setUserModalOpen,
+              },
+            ].map(({ name, label, modalOpen, setModalOpen, options }) => (
+              <form.Field key={name} name={name as keyof AssetFormValues}>
+                {(field) => (
+                  <div className="col-md-6">
+                    <label className="form-label d-flex justify-content-between">
+                      <span>Select {label}</span>
+                      <Button
+                        color="link"
+                        size="sm"
+                        onClick={() => setModalOpen(true)}
+                      >
+                        + Add New
+                      </Button>
+                    </label>
+                    <AsyncSelectInput
+                      field={field}
+                      options={options || []}
+                      placeholder={`Select ${label}`}
+                    />
+                  </div>
+                )}
+              </form.Field>
+            ))}
 
-            <div className="col-md-6">
-              <label className="form-label">Warranty Expiry</label>
-              <DatePicker
-                className="form-control"
-                selected={warranty_expiry ? new Date(warranty_expiry) : null}
-                onChange={(date) =>
-                  form.setFieldValue(
-                    "warranty_expiry",
-                    date?.toISOString().split("T")[0] || "",
-                  )
-                }
-                dateFormat="yyyy-MM-dd"
-                showYearDropdown
-                showMonthDropdown
-                scrollableYearDropdown
-              />
-            </div>
-
-            <form.Field name="configuration">
-              {(field) => (
-                <div className="col-12">
-                  <label className="form-label">Configuration</label>
-                  <textarea
-                    rows={3}
-                    className="form-control"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            {/* Selects with Add New buttons */}
-            <form.Field name="department_id">
-              {(field) => (
-                <div className="col-md-6">
-                  <label className="form-label d-flex justify-content-between">
-                    <span>Select Department</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setDepModalOpen(true)}
-                    >
-                      + Add New
-                    </Button>
-                  </label>
-                  <AsyncSelectInput
-                    field={field}
-                    options={departments || []}
-                    placeholder="Select Department"
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            <form.Field name="location_id">
-              {(field) => (
-                <div className="col-md-6">
-                  <label className="form-label d-flex justify-content-between">
-                    <span>Select Location</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setLocModalOpen(true)}
-                    >
-                      + Add New
-                    </Button>
-                  </label>
-                  <AsyncSelectInput
-                    field={field}
-                    options={locations || []}
-                    placeholder="Select Location"
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            <form.Field name="category_id">
-              {(field) => (
-                <div className="col-md-6">
-                  <label className="form-label d-flex justify-content-between">
-                    <span>Select Category</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setCatModalOpen(true)}
-                    >
-                      + Add New
-                    </Button>
-                  </label>
-                  <AsyncSelectInput
-                    field={field}
-                    options={categories || []}
-                    placeholder="Select Category"
-                  />
-                </div>
-              )}
-            </form.Field>
-
-            <form.Field name="assigned_to">
-              {(field) => (
-                <div className="col-md-6">
-                  <label className="form-label d-flex justify-content-between">
-                    <span>Assign To</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setUserModalOpen(true)}
-                    >
-                      + Add New
-                    </Button>
-                  </label>
-                  <AsyncSelectInput
-                    field={field}
-                    options={users || []}
-                    placeholder="Assign To"
-                  />
-                </div>
-              )}
-            </form.Field>
-
+            {/* Status */}
             <form.Field name="status_id">
               {(field) => (
                 <AsyncSelectInput
@@ -323,11 +339,10 @@ const EditAssetModal: React.FC<EditAssetModalProps> = ({
         </ModalBody>
 
         <ModalFooter>
-          <Button color="secondary" onClick={toggle}>
+          <Button color="secondary" onClick={handleClose}>
             Cancel
           </Button>
           <Button
-            type="submit"
             color="primary"
             onClick={() => form.handleSubmit()}
             disabled={updateAsset.isPending}
@@ -337,7 +352,7 @@ const EditAssetModal: React.FC<EditAssetModalProps> = ({
         </ModalFooter>
       </Modal>
 
-      {/* Linked modals */}
+      {/* Sub-modals */}
       <AddDepartmentModal
         isOpen={depModalOpen}
         onClose={() => setDepModalOpen(false)}
@@ -362,4 +377,4 @@ const EditAssetModal: React.FC<EditAssetModalProps> = ({
   );
 };
 
-export default EditAssetModal;
+export default UpdateAssetModal;
