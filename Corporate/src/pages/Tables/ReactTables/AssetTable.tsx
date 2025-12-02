@@ -1,18 +1,18 @@
 // File: src/pages/Assets/AssetTable.tsx
-import React, { useMemo, useState, useEffect } from "react";
-import AssetViewModal from "../../../Components/Common/Assets/AssetViewModel";
-import DeleteConfirmModal from "../../../Components/Common/Assets/DeleteConfirmModal";
-import AddAssetModal from "../../../Components/Common/AssetForm";
-import EditAssetModal from "Components/Common/Custom/Asset/EditAssetModal";
-import companylogo from "../../../assets/images/Logo1.jpg";
-import { useQueryClient } from "@tanstack/react-query";
+import React, { useMemo, useState, useEffect } from 'react';
+import AssetViewModal from '../../../Components/Common/Assets/AssetViewModel';
+import DeleteConfirmModal from '../../../Components/Common/Assets/DeleteConfirmModal';
+import AddAssetModal from '../../../Components/Common/AssetForm';
+import EditAssetModal from 'Components/Common/Custom/Asset/EditAssetModal';
+import companylogo from '../../../assets/images/Logo1.jpg';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   createColumnHelper,
   flexRender,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 import {
   Button,
   Card,
@@ -29,25 +29,24 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-} from "reactstrap";
-import { Plus, Printer, MoreVertical, Sliders } from "lucide-react";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
-import { useApiGet } from "../../../helpers/api_helper";
-import type { SortingState } from "@tanstack/react-table";
+} from 'reactstrap';
+import { Plus, Printer, MoreVertical, Sliders } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import { useApiGet } from '../../../helpers/api_helper';
+import type { SortingState } from '@tanstack/react-table';
 
 const columnHelper = createColumnHelper<any>();
 
-// highlight helper
 const highlightMatch = (text: string, filter: string) => {
   if (!filter || !text) return text;
-  const regex = new RegExp(`(${filter})`, "gi");
+  const regex = new RegExp(`(${filter})`, 'gi');
   return text
     .toString()
     .split(regex)
     .map((part, i) =>
       regex.test(part) ? (
-        <mark key={i} style={{ backgroundColor: "yellow", padding: 0 }}>
+        <mark key={i} style={{ backgroundColor: 'yellow', padding: 0 }}>
           {part}
         </mark>
       ) : (
@@ -68,59 +67,51 @@ const AssetTable = () => {
   const [perPage, setPerPage] = useState(10);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRows, setSelectedRows] = useState<Record<number, boolean>>({});
-  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(
-    {},
-  );
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [globalFilter, setGlobalFilter] = useState('');
   const [showColumnModal, setShowColumnModal] = useState(false);
 
-  // Define all possible columns
   const allColumnKeys = [
-    "name",
-    "asset tag",
-    "serial_number",
-    "model",
-    "category",
-    "assigned_to",
-    "location",
-    "department",
-    "status",
-    "purchase_date",
-    "warranty_expiry",
-    "configuration",
+    'name',
+    'asset tag',
+    'serial_number',
+    'model',
+    'category',
+    'assigned_to',
+    'location',
+    'department',
+    'status',
+    'purchase_date',
+    'warranty_expiry',
+    'configuration',
   ];
 
-  // Define which should be hidden by default
   const defaultHiddenColumns = [
-    "asset_tag",
-    "status",
-    "purchase_date",
-    "warranty_expiry",
-    "configuration",
+    'asset_tag',
+    'status',
+    'purchase_date',
+    'warranty_expiry',
+    'configuration',
   ];
 
-  // Persist column visibility in localStorage
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
-    () => {
-      const saved = localStorage.getItem("visibleColumns");
-      if (saved) return JSON.parse(saved);
-      return Object.fromEntries(defaultHiddenColumns.map((c) => [c, false]));
-    },
-  );
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('visibleColumns');
+    if (saved) return JSON.parse(saved);
+    return Object.fromEntries(defaultHiddenColumns.map((c) => [c, false]));
+  });
 
   useEffect(() => {
-    localStorage.setItem("visibleColumns", JSON.stringify(visibleColumns));
+    localStorage.setItem('visibleColumns', JSON.stringify(visibleColumns));
   }, [visibleColumns]);
 
   const { data, isLoading } = useApiGet<any>(
-    ["assets"],
+    ['assets'],
     `/assets`, // fetch full dataset
     {},
     true,
     { refetchInterval: 10000 },
   );
 
-  // Reset to first page whenever filters or global search change
   useEffect(() => {
     setPageIndex(0);
   }, [columnFilters, globalFilter]);
@@ -129,9 +120,7 @@ const AssetTable = () => {
     setSelectedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const isAllSelected = data?.assets?.every(
-    (asset: any) => selectedRows[asset.id],
-  );
+  const isAllSelected = data?.assets?.every((asset: any) => selectedRows[asset.id]);
 
   const toggleSelectAll = () => {
     if (isAllSelected) {
@@ -145,31 +134,23 @@ const AssetTable = () => {
     }
   };
 
-  // Filtered + repaginated data
   const filteredData = useMemo(() => {
     if (!data?.assets) return [];
 
     return data.assets.filter((row: any) => {
-      // global filter across all fields
       const globalMatch = globalFilter
-        ? Object.values(row)
-            .join(" ")
-            .toLowerCase()
-            .includes(globalFilter.toLowerCase())
+        ? Object.values(row).join(' ').toLowerCase().includes(globalFilter.toLowerCase())
         : true;
 
-      // per-column filters
       const columnMatch = Object.entries(columnFilters).every(
         ([key, value]) =>
-          !value ||
-          row[key]?.toString().toLowerCase().includes(value.toLowerCase()),
+          !value || row[key]?.toString().toLowerCase().includes(value.toLowerCase()),
       );
 
       return globalMatch && columnMatch;
     });
   }, [data, columnFilters, globalFilter]);
 
-  // Manual pagination on filtered data
   const paginatedData = useMemo(() => {
     const start = pageIndex * perPage;
     return filteredData.slice(start, start + perPage);
@@ -180,14 +161,8 @@ const AssetTable = () => {
   const columns = useMemo(() => {
     const baseColumns = [
       columnHelper.display({
-        id: "select",
-        header: () => (
-          <Input
-            type="checkbox"
-            checked={isAllSelected}
-            onChange={toggleSelectAll}
-          />
-        ),
+        id: 'select',
+        header: () => <Input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} />,
         cell: ({ row }) => (
           <Input
             type="checkbox"
@@ -202,15 +177,11 @@ const AssetTable = () => {
           columnHelper.accessor(key, {
             header: () => (
               <div>
-                <div>
-                  {key
-                    .replace("_", " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())}
-                </div>
+                <div>{key.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</div>
                 <Input
                   bsSize="sm"
                   placeholder="Filter..."
-                  value={columnFilters[key] || ""}
+                  value={columnFilters[key] || ''}
                   onChange={(e) =>
                     setColumnFilters((prev) => ({
                       ...prev,
@@ -229,8 +200,8 @@ const AssetTable = () => {
           }),
         ),
       columnHelper.display({
-        id: "actions",
-        header: "Actions",
+        id: 'actions',
+        header: 'Actions',
         cell: ({ row }) => (
           <UncontrolledDropdown>
             <DropdownToggle tag="a" className="text-reset">
@@ -269,13 +240,7 @@ const AssetTable = () => {
       }),
     ];
     return baseColumns;
-  }, [
-    selectedRows,
-    isAllSelected,
-    columnFilters,
-    visibleColumns,
-    globalFilter,
-  ]);
+  }, [selectedRows, isAllSelected, columnFilters, visibleColumns, globalFilter]);
 
   const table = useReactTable({
     data: paginatedData,
@@ -288,14 +253,9 @@ const AssetTable = () => {
     pageCount,
   });
 
-  // ✅ Export current filtered data to Excel
-  // ✅ Export current filtered data to Excel
-  // ✅ Export current filtered data to Excel with logo + company name
-  // ✅ Export current filtered data to Excel with logo + company name
-  // ✅ Export current filtered data to Excel with logo + company name
   const exportExcel = async () => {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Assets");
+    const worksheet = workbook.addWorksheet('Assets');
 
     // ===== 1. Insert Logo (only col A) =====
     try {
@@ -304,52 +264,47 @@ const AssetTable = () => {
 
       const imageId = workbook.addImage({
         buffer: logoBuffer,
-        extension: "png",
+        extension: 'png',
       });
 
-      worksheet.mergeCells("A1:A3"); // logo in col A
+      worksheet.mergeCells('A1:A3');
       worksheet.addImage(imageId, {
         tl: { col: 0, row: 0 },
         ext: { width: 80, height: 40 },
       });
     } catch (err) {
-      console.warn("⚠️ Failed to load logo:", err);
+      console.warn('⚠️ Failed to load logo:', err);
     }
 
-    // ===== 2. Prepare Headers =====
     const exportableCols = columns.filter(
-      (col: any) => col.id !== "actions" && col.id !== "select",
+      (col: any) => col.id !== 'actions' && col.id !== 'select',
     );
 
     const headers = exportableCols.map((col: any) => {
-      if (typeof col.header === "string" && col.header.trim() !== "") {
+      if (typeof col.header === 'string' && col.header.trim() !== '') {
         return col.header;
       }
-      const id = col.accessorKey || col.id || "";
-      return id
-        .replace(/([A-Z])/g, " $1")
-        .replace(/^./, (str: string) => str.toUpperCase());
+      const id = col.accessorKey || col.id || '';
+      return id.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase());
     });
 
-    // ===== 3. Company Name (dynamic merge) =====
     const lastColLetter = worksheet.getColumn(headers.length + 1).letter;
-    // +1 because col A is logo, headers start from col B
     worksheet.mergeCells(`B1:${lastColLetter}3`);
 
-    const companyCell = worksheet.getCell("B1");
-    companyCell.value = "GITHUNGURI DAIRY FARMERS COOPERATIVE SOCIETY";
+    const companyCell = worksheet.getCell('B1');
+    companyCell.value = 'GITHUNGURI DAIRY FARMERS COOPERATIVE SOCIETY';
     companyCell.alignment = {
-      horizontal: "center",
-      vertical: "middle",
+      horizontal: 'center',
+      vertical: 'middle',
       wrapText: true,
     };
     companyCell.font = { size: 18, bold: true };
     companyCell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFEFEFEF" },
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFEFEFEF' },
     };
-    companyCell.border = { bottom: { style: "thin" } };
+    companyCell.border = { bottom: { style: 'thin' } };
 
     worksheet.addRow([]);
 
@@ -361,24 +316,24 @@ const AssetTable = () => {
       headerRow.eachCell((cell) => {
         cell.font = { bold: true, size: 12 };
         cell.alignment = {
-          horizontal: "center",
-          vertical: "middle",
+          horizontal: 'center',
+          vertical: 'middle',
           wrapText: true,
         };
         cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFDDDDDD" },
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFDDDDDD' },
         };
         cell.border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
         };
       });
 
-      worksheet.views = [{ state: "frozen", ySplit: headerRow.number }];
+      worksheet.views = [{ state: 'frozen', ySplit: headerRow.number }];
     }
 
     // ===== 5. Data Rows =====
@@ -387,12 +342,12 @@ const AssetTable = () => {
         const rowData = exportableCols.map((col: any) => {
           const key = col.accessorKey || col.id;
           const val = row[key];
-          return val !== undefined && val !== null ? val : "";
+          return val !== undefined && val !== null ? val : '';
         });
         worksheet.addRow(rowData);
       });
     } else {
-      worksheet.addRow(["⚠️ No data available"]);
+      worksheet.addRow(['⚠️ No data available']);
     }
 
     // Style data rows
@@ -400,10 +355,10 @@ const AssetTable = () => {
       if (rowNumber > 4) {
         row.eachCell((cell) => {
           cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
           };
         });
       }
@@ -421,7 +376,7 @@ const AssetTable = () => {
 
     // ===== 7. Save File =====
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), "assets.xlsx");
+    saveAs(new Blob([buffer]), 'assets.xlsx');
   };
 
   return (
@@ -450,15 +405,12 @@ const AssetTable = () => {
               placeholder="Search assets..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
-              style={{ width: "30%" }}
+              style={{ width: '30%' }}
             />
           </Col>
         </Row>
 
-        <Modal
-          isOpen={showColumnModal}
-          toggle={() => setShowColumnModal(!showColumnModal)}
-        >
+        <Modal isOpen={showColumnModal} toggle={() => setShowColumnModal(!showColumnModal)}>
           <ModalHeader toggle={() => setShowColumnModal(!showColumnModal)}>
             Select Columns
           </ModalHeader>
@@ -478,9 +430,7 @@ const AssetTable = () => {
                   }
                 />
                 <label className="form-check-label" htmlFor={col}>
-                  {col
-                    .replace("_", " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  {col.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                 </label>
               </div>
             ))}
@@ -508,20 +458,15 @@ const AssetTable = () => {
                           key={header.id}
                           onClick={header.column.getToggleSortingHandler()}
                           style={{
-                            cursor: header.column.getCanSort()
-                              ? "pointer"
-                              : "default",
+                            cursor: header.column.getCanSort() ? 'pointer' : 'default',
                           }}
                         >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                           {header.column.getIsSorted()
-                            ? header.column.getIsSorted() === "asc"
-                              ? " 🔼"
-                              : " 🔽"
-                            : ""}
+                            ? header.column.getIsSorted() === 'asc'
+                              ? ' 🔼'
+                              : ' 🔽'
+                            : ''}
                         </th>
                       ))}
                     </tr>
@@ -532,10 +477,7 @@ const AssetTable = () => {
                     <tr key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}
                     </tr>
@@ -547,28 +489,21 @@ const AssetTable = () => {
             <Row className="mt-3 align-items-center">
               <Col md="6">
                 <div>
-                  Page {pageIndex + 1} of {pageCount} | Showing{" "}
-                  {paginatedData.length} of {filteredData.length} filtered
-                  assets
+                  Page {pageIndex + 1} of {pageCount} | Showing {paginatedData.length} of{' '}
+                  {filteredData.length} filtered assets
                 </div>
               </Col>
               <Col md="6" className="text-end">
                 <div className="d-flex gap-2 justify-content-end">
                   <Button
-                    onClick={() =>
-                      setPageIndex((prev) => Math.max(prev - 1, 0))
-                    }
+                    onClick={() => setPageIndex((prev) => Math.max(prev - 1, 0))}
                     disabled={pageIndex === 0}
                     size="sm"
                   >
                     Previous
                   </Button>
                   <Button
-                    onClick={() =>
-                      setPageIndex((prev) =>
-                        prev + 1 < pageCount ? prev + 1 : prev,
-                      )
-                    }
+                    onClick={() => setPageIndex((prev) => (prev + 1 < pageCount ? prev + 1 : prev))}
                     disabled={pageIndex + 1 >= pageCount}
                     size="sm"
                   >
@@ -601,7 +536,7 @@ const AssetTable = () => {
           asset={selectedAsset}
           onEditSuccess={() => {
             setEditModal(false);
-            queryClient.invalidateQueries({ queryKey: ["assets"] });
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
           }}
         />
 
@@ -609,7 +544,7 @@ const AssetTable = () => {
           isOpen={addModal}
           onClose={() => {
             setAddModal(false);
-            queryClient.invalidateQueries({ queryKey: ["assets"] });
+            queryClient.invalidateQueries({ queryKey: ['assets'] });
           }}
         />
       </CardBody>

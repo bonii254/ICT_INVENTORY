@@ -1,31 +1,25 @@
-import React, { useState } from "react";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Spinner,
-} from "reactstrap";
-import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
-import { toast } from "react-toastify";
-import AsyncSelectInput from "../../../../helpers/AsyncSelectInput";
-import { useApiPost } from "../../../../helpers/api_helper";
-import { useAssetOptions } from "../../../../hooks/useAssetOptions";
+import React, { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Spinner } from 'reactstrap';
+import { useForm } from '@tanstack/react-form';
+import { z } from 'zod';
+import { toast } from 'react-toastify';
+import AsyncSelectInput from '../../../../helpers/AsyncSelectInput';
+import { useApiPost } from '../../../../helpers/api_helper';
+import { useAssetOptions } from '../../../../hooks/useAssetOptions';
 
 const userSchema = z.object({
-  fullname: z.string().min(1, "Full name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  department_id: z.number().min(1, "Select a department"),
-  role_id: z.number().min(1, "Select a role"),
+  fullname: z.string().min(1, 'Full name is required'),
+  email: z.string().email('Invalid email address'),
+  payroll_no: z.string().min(1, 'Payroll number is required'),
+  department_id: z.number().min(1, 'Select a department'),
+  role_id: z.number().min(1, 'Select a role'),
 });
 
 type User = {
+  id: number;
   fullname: string;
   email: string;
-  password: string;
+  payroll_no: string;
   department_id: number;
   role_id: number;
 };
@@ -33,46 +27,55 @@ type User = {
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (user: { username: string }) => void;
+  onSuccess?: (user: { id: number; fullname: string; payroll_no: string }) => void;
 }
 
-const AddUserModal: React.FC<AddUserModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-}) => {
+const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [createdUser, setCreatedUser] = useState<Partial<User> | null>(null);
   const { departments = [], roles = [] } = useAssetOptions() as any;
 
   const createUser = useApiPost<{ user: User }, z.infer<typeof userSchema>>(
-    "/auth/register",
+    '/auth/register',
     (res) => {
       setCreatedUser(res.user);
       form.reset();
-      onSuccess?.({ username: res.user.fullname });
-      toast.success("✅ User registered successfully.");
+      onSuccess?.({
+        id: res.user.id!,
+        fullname: res.user.fullname,
+        payroll_no: res.user.payroll_no,
+      });
+      toast.success('User registered successfully. Password sent via email.');
     },
     (err) => {
-      let msg = "User registration failed";
-      if (err?.response?.data?.error) {
-        const error = err.response.data.error;
-        msg = typeof error === "string" ? error : JSON.stringify(error);
+      let msg = 'User registration failed';
+
+      const data = err?.response?.data;
+
+      if (data?.error) {
+        const error = data.error;
+        msg = typeof error === 'string' ? error : JSON.stringify(error);
+      } else if (data?.errors) {
+        const errorObj = data.errors;
+        msg = Object.entries(errorObj)
+          .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+          .join('\n');
       } else if (err?.message) {
         msg = err.message;
       }
+
       toast.error(`❌ ${msg}`, {
-        position: "top-center",
+        position: 'top-center',
         autoClose: 5000,
-        theme: "colored",
+        theme: 'colored',
       });
     },
   );
 
   const form = useForm({
     defaultValues: {
-      fullname: "",
-      email: "",
-      password: "",
+      fullname: '',
+      email: '',
+      payroll_no: '',
       department_id: 0,
       role_id: 0,
     },
@@ -107,6 +110,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
       <ModalHeader toggle={handleClose}>Add New User</ModalHeader>
       <ModalBody>
         <form onSubmit={form.handleSubmit} className="row gy-3">
+          {/* Fullname */}
           <form.Field name="fullname">
             {(field) => (
               <div className="col-12">
@@ -117,14 +121,13 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                   onChange={(e) => field.handleChange(e.target.value)}
                 />
                 {field.state.meta.errors && (
-                  <small className="text-danger">
-                    {field.state.meta.errors}
-                  </small>
+                  <small className="text-danger">{field.state.meta.errors}</small>
                 )}
               </div>
             )}
           </form.Field>
 
+          {/* Email */}
           <form.Field name="email">
             {(field) => (
               <div className="col-12">
@@ -136,33 +139,30 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                   onChange={(e) => field.handleChange(e.target.value)}
                 />
                 {field.state.meta.errors && (
-                  <small className="text-danger">
-                    {field.state.meta.errors}
-                  </small>
+                  <small className="text-danger">{field.state.meta.errors}</small>
                 )}
               </div>
             )}
           </form.Field>
 
-          <form.Field name="password">
+          {/* Payroll No */}
+          <form.Field name="payroll_no">
             {(field) => (
               <div className="col-12">
-                <label className="form-label">Password</label>
+                <label className="form-label">Payroll Number</label>
                 <input
-                  type="password"
                   className="form-control"
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                 />
                 {field.state.meta.errors && (
-                  <small className="text-danger">
-                    {field.state.meta.errors}
-                  </small>
+                  <small className="text-danger">{field.state.meta.errors}</small>
                 )}
               </div>
             )}
           </form.Field>
 
+          {/* Department */}
           <form.Field name="department_id">
             {(field) => (
               <div className="col-12">
@@ -171,12 +171,13 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                   field={field}
                   options={departments}
                   placeholder="Search or select department"
-                  isSearchable={true}
+                  isSearchable
                 />
               </div>
             )}
           </form.Field>
 
+          {/* Role */}
           <form.Field name="role_id">
             {(field) => (
               <div className="col-12">
@@ -185,7 +186,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                   field={field}
                   options={roles}
                   placeholder="Search or select role"
-                  isSearchable={true}
+                  isSearchable
                 />
               </div>
             )}
@@ -202,6 +203,9 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
               <li>
                 <strong>Email:</strong> {createdUser.email}
               </li>
+              <li>
+                <strong>Payroll No:</strong> {createdUser.payroll_no}
+              </li>
             </ul>
           </div>
         )}
@@ -217,7 +221,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
           onClick={() => form.handleSubmit()}
           disabled={createUser.isPending}
         >
-          {createUser.isPending ? <Spinner size="sm" /> : "Add User"}
+          {createUser.isPending ? <Spinner size="sm" /> : 'Add User'}
         </Button>
       </ModalFooter>
     </Modal>

@@ -1,30 +1,23 @@
-import React, { useState } from "react";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Spinner,
-} from "reactstrap";
-import { useForm } from "@tanstack/react-form";
-import { useStore } from "@tanstack/react-store";
-import { useQueryClient } from "@tanstack/react-query";
-import DatePicker from "react-datepicker";
-import { z } from "zod";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "react-datepicker/dist/react-datepicker.css";
+import React, { useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Spinner } from 'reactstrap';
+import { useForm } from '@tanstack/react-form';
+import { useStore } from '@tanstack/react-store';
+import { useQueryClient } from '@tanstack/react-query';
+import DatePicker from 'react-datepicker';
+import { z } from 'zod';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import 'react-datepicker/dist/react-datepicker.css';
 
-import { assetSchema } from "../../schemas/assetSchema";
-import { useAssetOptions } from "../../hooks/useAssetOptions";
-import { useApiPost } from "../../helpers/api_helper";
-import AsyncSelectInput from "../../helpers/AsyncSelectInput";
+import { assetSchema } from '../../schemas/assetSchema';
+import { useAssetOptions } from '../../hooks/useAssetOptions';
+import { useApiPost } from '../../helpers/api_helper';
+import AsyncSelectInput from '../../helpers/AsyncSelectInput';
 
-import AddDepartmentModal from "./Custom/Department/AddDepartmentModal";
-import AddCategoryModal from "./Custom/Category/AddCategoryModal";
-import AddLocationModal from "./Custom/Location/AddLocationModal";
-import AddUserModal from "./Custom/User/AddUserModal";
+import AddDepartmentModal from './Custom/Department/AddDepartmentModal';
+import AddCategoryModal from './Custom/Category/AddCategoryModal';
+import AddLocationModal from './Custom/Location/AddLocationModal';
+import AddUserModal from './Custom/User/AddUserModal';
 
 type CreatedAsset = {
   asset_tag: string;
@@ -59,51 +52,45 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
   const [userModalOpen, setUserModalOpen] = useState(false);
 
   const queryClient = useQueryClient();
-  const { departments, locations, statuses, users, categories, refetch } =
-    useAssetOptions();
+  const { departments, locations, statuses, users, categories, refetch } = useAssetOptions();
 
-  const createAsset = useApiPost<
-    { asset: CreatedAsset },
-    z.infer<typeof assetSchema>
-  >(
-    "/register/asset",
+  const createAsset = useApiPost<{ asset: CreatedAsset }, z.infer<typeof assetSchema>>(
+    '/register/asset',
     (res) => {
       setCreatedAsset(res.asset);
       form.reset();
-      toast.success("✅ Asset created successfully.");
+      toast.success('✅ Asset created successfully.');
     },
     (err) => {
-      let msg = "Asset creation failed";
+      let msg = 'Asset creation failed';
       if (err?.response?.data?.error) {
         const error = err.response.data.error;
-        if (typeof error === "string") {
+        if (typeof error === 'string') {
           msg = error;
-        } else if (typeof error === "object") {
+        } else if (typeof error === 'object') {
           msg = Object.entries(error)
-            .map(
-              ([field, msgs]) => `${field}: ${(msgs as string[]).join(", ")}`,
-            )
-            .join("\n");
+            .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(', ')}`)
+            .join('\n');
         }
       } else if (err?.message) {
         msg = err.message;
       }
       toast.error(`❌ ${msg}`, {
-        position: "top-center",
+        position: 'top-center',
         autoClose: 5000,
-        theme: "colored",
+        theme: 'colored',
       });
-      console.error("Asset creation failed:", err);
+      console.error('Asset creation failed:', err);
     },
   );
 
   const form = useForm({
     defaultValues: {
-      serial_number: "",
-      model_number: "",
-      purchase_date: "",
-      warranty_expiry: "",
-      configuration: "",
+      serial_number: '',
+      model_number: '',
+      purchase_date: '',
+      warranty_expiry: '',
+      configuration: '',
       department_id: 0,
       location_id: 0,
       category_id: 0,
@@ -114,49 +101,43 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
       const result = assetSchema.safeParse(value);
       if (!result.success) {
         const zodErrors = result.error.flatten().fieldErrors;
-        (Object.keys(zodErrors) as (keyof typeof zodErrors)[]).forEach(
-          (key) => {
-            const message = zodErrors[key]?.[0];
-            if (message) {
-              formApi.setFieldMeta(key, (meta) => ({
-                ...meta,
-                error: message,
-                isTouched: true,
-              }));
-            }
-          },
-        );
+        (Object.keys(zodErrors) as (keyof typeof zodErrors)[]).forEach((key) => {
+          const message = zodErrors[key]?.[0];
+          if (message) {
+            formApi.setFieldMeta(key, (meta) => ({
+              ...meta,
+              error: message,
+              isTouched: true,
+            }));
+          }
+        });
         return;
       }
       createAsset.mutate(result.data);
     },
   });
 
-  const { purchase_date, warranty_expiry } = useStore(
-    form.baseStore,
-    (s: any) => ({
-      purchase_date: s.values.purchase_date,
-      warranty_expiry: s.values.warranty_expiry,
-    }),
-  );
+  const { purchase_date, warranty_expiry } = useStore(form.baseStore, (s: any) => ({
+    purchase_date: s.values.purchase_date,
+    warranty_expiry: s.values.warranty_expiry,
+  }));
 
   const handleDepCreated = (newDep: { name: string }) => {
     refetch?.();
     const newOption = departments?.find((d) => d.label === newDep.name);
     if (newOption) {
-      form.setFieldValue("department_id", newOption.value);
+      form.setFieldValue('department_id', newOption.value);
     }
     toast.success(`Department "${newDep.name}" added and selected!`);
   };
 
   const handleCatCreated = async (newCat: { name: string }) => {
-    await queryClient.invalidateQueries({ queryKey: ["categories"] });
+    await queryClient.invalidateQueries({ queryKey: ['categories'] });
     refetch?.();
-    const updatedCategories =
-      queryClient.getQueryData<Option[]>(["categories"] as const) ?? [];
+    const updatedCategories = queryClient.getQueryData<Option[]>(['categories'] as const) ?? [];
     const newOption = updatedCategories.find((c) => c.label === newCat.name);
     if (newOption) {
-      form.setFieldValue("category_id", newOption.value);
+      form.setFieldValue('category_id', newOption.value);
       toast.success(`Category "${newCat.name}" added and selected!`);
     } else {
       toast.warning(`Category "${newCat.name}" added, but not yet selectable.`);
@@ -167,20 +148,19 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
     refetch?.();
     const newOption = locations?.find((l) => l.label === newLoc.name);
     if (newOption) {
-      form.setFieldValue("location_id", newOption.value);
+      form.setFieldValue('location_id', newOption.value);
     }
     toast.success(`Location "${newLoc.name}" added and selected!`);
   };
 
-  const handleUserCreated = (newUser: { username: string }) => {
+  const handleUserCreated = (newUser: { id: number; fullname: string; payroll_no: string }) => {
     refetch?.();
-    const newOption = users?.find((u) => u.label === newUser.username);
+    const newOption = users?.find((u) => u.label === newUser.fullname);
     if (newOption) {
-      form.setFieldValue("assigned_to", newOption.value);
+      form.setFieldValue('assigned_to', newOption.value);
     }
-    toast.success(`User "${newUser.username}" added and selected!`);
+    toast.success(`User "${newUser.fullname}" added and selected!`);
   };
-
   const handleClose = () => {
     form.reset();
     setCreatedAsset(null);
@@ -225,10 +205,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                 className="form-control"
                 selected={purchase_date ? new Date(purchase_date) : null}
                 onChange={(date) =>
-                  form.setFieldValue(
-                    "purchase_date",
-                    date?.toISOString().split("T")[0] || "",
-                  )
+                  form.setFieldValue('purchase_date', date?.toISOString().split('T')[0] || '')
                 }
                 dateFormat="yyyy-MM-dd"
                 showYearDropdown
@@ -244,10 +221,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                 className="form-control"
                 selected={warranty_expiry ? new Date(warranty_expiry) : null}
                 onChange={(date) =>
-                  form.setFieldValue(
-                    "warranty_expiry",
-                    date?.toISOString().split("T")[0] || "",
-                  )
+                  form.setFieldValue('warranty_expiry', date?.toISOString().split('T')[0] || '')
                 }
                 dateFormat="yyyy-MM-dd"
                 showYearDropdown
@@ -276,11 +250,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                 <div className="col-md-6">
                   <label className="form-label d-flex justify-content-between">
                     <span>Select Department</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setDepModalOpen(true)}
-                    >
+                    <Button color="link" size="sm" onClick={() => setDepModalOpen(true)}>
                       + Add New
                     </Button>
                   </label>
@@ -298,11 +268,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                 <div className="col-md-6">
                   <label className="form-label d-flex justify-content-between">
                     <span>Select Location</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setLocModalOpen(true)}
-                    >
+                    <Button color="link" size="sm" onClick={() => setLocModalOpen(true)}>
                       + Add New
                     </Button>
                   </label>
@@ -320,11 +286,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                 <div className="col-md-6">
                   <label className="form-label d-flex justify-content-between">
                     <span>Select Category</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setCatModalOpen(true)}
-                    >
+                    <Button color="link" size="sm" onClick={() => setCatModalOpen(true)}>
                       + Add New
                     </Button>
                   </label>
@@ -342,19 +304,11 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                 <div className="col-md-6">
                   <label className="form-label d-flex justify-content-between">
                     <span>Assign To</span>
-                    <Button
-                      color="link"
-                      size="sm"
-                      onClick={() => setUserModalOpen(true)}
-                    >
+                    <Button color="link" size="sm" onClick={() => setUserModalOpen(true)}>
                       + Add New
                     </Button>
                   </label>
-                  <AsyncSelectInput
-                    field={field}
-                    options={users || []}
-                    placeholder="Assign To"
-                  />
+                  <AsyncSelectInput field={field} options={users || []} placeholder="Assign To" />
                 </div>
               )}
             </form.Field>
@@ -396,7 +350,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
             onClick={() => form.handleSubmit()}
             disabled={createAsset.isPending}
           >
-            {createAsset.isPending ? <Spinner size="sm" /> : "Create Asset"}
+            {createAsset.isPending ? <Spinner size="sm" /> : 'Create Asset'}
           </Button>
         </ModalFooter>
       </Modal>

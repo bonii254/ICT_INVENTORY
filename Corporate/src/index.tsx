@@ -17,7 +17,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <Provider store={store}>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename="/velzon/react-ts/corporate">
+      <BrowserRouter basename="/fresha">
         <App />
       </BrowserRouter>
     </QueryClientProvider>

@@ -50,7 +50,6 @@ const processQueue = (error: any, response?: any) => {
   failedQueue = [];
 };
 
-// 🧠 Intercept 401 errors and try refreshing token via cookie
 apiClient.interceptors.response.use(
   (res: AxiosResponse) => res,
   async (error: any) => {

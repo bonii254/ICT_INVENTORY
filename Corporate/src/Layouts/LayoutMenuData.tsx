@@ -63,6 +63,18 @@ const Navdata = () => {
       link: "/assets",
     },
     {
+      id: "assetloans",
+      label: "Asset Loans",
+      icon: "ri-handbag-line",
+      link: "/asset-loans",
+    },
+    {
+      id: "externalservices",
+      label: "External Services",
+      icon: "ri-tools-line",
+      link: "/external-services",
+    },
+    {
       id: "consumables",
       label: "Consumables",
       icon: "ri-drop-line",
@@ -143,6 +155,12 @@ const Navdata = () => {
           id: "roles",
           label: "Roles",
           link: "/settings/roles",
+          parentId: "settings",
+        },
+        {
+          id: "providers",
+          label: "Service Providers",
+          link: "/settings/providers",
           parentId: "settings",
         },
       ],

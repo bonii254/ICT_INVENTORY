@@ -1,7 +1,7 @@
 export const LOGIN_ROUTE = "/login";
 export const DASHBOARD_ROUTE = "/dashboard";
 export const DEFAULT_ROUTE = "/";
-export const BASE_PATH = "/velzon/react-ts/corporate";
+export const BASE_PATH = "/fresha";
 export const LOGIN_ABSOLUTE = `${BASE_PATH}${LOGIN_ROUTE}`;
 
 //REGISTER
