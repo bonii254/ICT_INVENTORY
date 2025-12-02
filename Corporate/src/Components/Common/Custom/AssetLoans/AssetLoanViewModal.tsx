@@ -52,8 +52,10 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle,
     doc.text('Asset Loan Details', 14, 45);
 
     const rows = [
-      ['Asset', loan.asset || '—'],
-      ['Borrower', loan.borrower || '—'],
+      ['Asset Name', loan.asset?.name || '—'],
+      ['Asset Serial No', loan.asset?.serial_no || '—'],
+      ['Borrower Name', loan.borrower?.full_name || '—'],
+      ['Borrower Payroll No', loan.borrower?.payroll_no || '—'],
       ['Loan Date', formatDate(loan.loan_date)],
       ['Expected Return', formatDate(loan.expected_return_date)],
       ['Actual Return', formatDate(loan.actual_return_date)],
@@ -73,7 +75,7 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle,
 
     const finalY = (doc as any).lastAutoTable?.finalY || 60;
 
-    // Signature Section (extra spacing for handwriting)
+    // Signature Section
     doc.setFontSize(12);
     doc.text('Borrower:', 14, finalY + 15);
     doc.text(
@@ -94,7 +96,6 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle,
     doc.text('Render Date: ____________________________________________', 14, finalY + 90);
     doc.text('Receiving Date: ____________________________________________', 14, finalY + 100);
 
-    // Instead of saving — open in new tab for preview
     const pdfBlob = doc.output('blob');
     const pdfUrl = URL.createObjectURL(pdfBlob);
     window.open(pdfUrl, '_blank');
@@ -125,10 +126,12 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle,
           <CardBody>
             <Row className="mb-2">
               <Col md="6">
-                <strong>Asset:</strong> {loan.asset || '—'}
+                <strong>Asset:</strong> {loan.asset?.name || '—'} (Serial:{' '}
+                {loan.asset?.serial_no || '—'})
               </Col>
               <Col md="6">
-                <strong>Borrower:</strong> {loan.borrower || '—'}
+                <strong>Borrower:</strong> {loan.borrower?.full_name || '—'} (Payroll No:{' '}
+                {loan.borrower?.payroll_no || '—'})
               </Col>
             </Row>
             <Row className="mb-2">

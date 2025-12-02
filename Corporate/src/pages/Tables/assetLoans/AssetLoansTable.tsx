@@ -11,14 +11,16 @@ import {
   DropdownToggle,
   DropdownMenu,
   DropdownItem,
+  Label,
 } from 'reactstrap';
-import { Plus, MoreVertical, Printer } from 'lucide-react';
+import { Plus, MoreVertical, Printer, Settings } from 'lucide-react';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   createColumnHelper,
   flexRender,
+  ColumnDef,
 } from '@tanstack/react-table';
 import type { SortingState } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
@@ -30,8 +32,6 @@ import AddAssetLoanModal from '../../../Components/Common/Custom/AssetLoans/AddA
 import AssetLoanViewModal from '../../../Components/Common/Custom/AssetLoans/AssetLoanViewModal';
 import DeleteAssetLoanConfirmModal from '../../../Components/Common/Custom/AssetLoans/DeleteConfirmModal';
 import ReturnAssetModal from '../../../Components/Common/Custom/AssetLoans/ReturnAssetModal';
-
-import companylogo from '../../../assets/images/Logo1.jpg';
 
 const columnHelper = createColumnHelper<any>();
 
@@ -64,6 +64,14 @@ const AssetLoanTable = () => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [globalFilter, setGlobalFilter] = useState('');
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    'asset',
+    'borrower',
+    'loan_date',
+    'expected_return_date',
+    'actual_return_date',
+    'status',
+  ]); // initially hide condition_before, condition_after, remarks
 
   const allColumnKeys = [
     'asset',
@@ -86,12 +94,21 @@ const AssetLoanTable = () => {
   const filteredData = useMemo(() => {
     return loans.filter((row: any) => {
       const globalMatch = globalFilter
-        ? Object.values(row).join(' ').toLowerCase().includes(globalFilter.toLowerCase())
+        ? Object.values(row)
+            .map((v) => (typeof v === 'object' && v !== null ? Object.values(v).join(' ') : v))
+            .join(' ')
+            .toLowerCase()
+            .includes(globalFilter.toLowerCase())
         : true;
 
       const columnMatch = Object.entries(columnFilters).every(
         ([key, value]) =>
-          !value || row[key]?.toString().toLowerCase().includes(value.toLowerCase()),
+          !value ||
+          (row[key]
+            ? typeof row[key] === 'object'
+              ? Object.values(row[key]).join(' ').toLowerCase().includes(value.toLowerCase())
+              : row[key].toString().toLowerCase().includes(value.toLowerCase())
+            : false),
       );
 
       return globalMatch && columnMatch;
@@ -105,9 +122,10 @@ const AssetLoanTable = () => {
 
   const pageCount = Math.ceil(filteredData.length / perPage);
 
-  const columns = useMemo(() => {
-    const baseColumns = [
-      ...allColumnKeys.map((key) =>
+  const columns: ColumnDef<any, any>[] = useMemo(() => {
+    const baseColumns: ColumnDef<any, any>[] = allColumnKeys
+      .filter((key) => visibleColumns.includes(key))
+      .map((key) =>
         columnHelper.accessor(key, {
           header: () => (
             <div>
@@ -125,7 +143,6 @@ const AssetLoanTable = () => {
             const colId = info.column.id;
             const filter = columnFilters[colId] || globalFilter;
 
-            // Format date columns
             const formattedValue =
               ['loan_date', 'expected_return_date', 'actual_return_date'].includes(colId) && value
                 ? new Date(value).toLocaleDateString('en-GB', {
@@ -134,12 +151,18 @@ const AssetLoanTable = () => {
                     month: 'short',
                     year: 'numeric',
                   })
-                : value || '-';
+                : value;
 
-            return <span>{highlightMatch(formattedValue, filter)}</span>;
+            if (colId === 'asset') return <span>{value?.name || '-'}</span>;
+            if (colId === 'borrower') return <span>{value?.full_name || '-'}</span>;
+
+            return <span>{highlightMatch(formattedValue || '-', filter)}</span>;
           },
         }),
-      ),
+      );
+
+    // Actions column
+    baseColumns.push(
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
@@ -180,9 +203,10 @@ const AssetLoanTable = () => {
           </UncontrolledDropdown>
         ),
       }),
-    ];
+    );
+
     return baseColumns;
-  }, [columnFilters, globalFilter]);
+  }, [columnFilters, globalFilter, visibleColumns]);
 
   const table = useReactTable({
     data: paginatedData,
@@ -199,30 +223,18 @@ const AssetLoanTable = () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Asset Loans');
 
-    worksheet.addRow([
-      'Asset',
-      'Borrower',
-      'Loan Date',
-      'Expected Return',
-      'Actual Return',
-      'Status',
-      'Condition Before',
-      'Condition After',
-      'Remarks',
-    ]);
+    worksheet.addRow([...visibleColumns.map((key) => key.replace(/_/g, ' ').toUpperCase())]);
 
-    loans.forEach((loan: any) => {
-      worksheet.addRow([
-        loan.asset,
-        loan.borrower,
-        loan.loan_date,
-        loan.expected_return_date,
-        loan.actual_return_date || '-',
-        loan.status,
-        loan.condition_before,
-        loan.condition_after || '-',
-        loan.remarks || '-',
-      ]);
+    paginatedData.forEach((loan: any) => {
+      const row = visibleColumns.map((col) => {
+        const val = loan[col];
+        if (col === 'asset') return val?.name || '-';
+        if (col === 'borrower') return val?.full_name || '-';
+        if (['loan_date', 'expected_return_date', 'actual_return_date'].includes(col) && val)
+          return new Date(val).toLocaleDateString('en-GB');
+        return val || '-';
+      });
+      worksheet.addRow(row);
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -237,6 +249,34 @@ const AssetLoanTable = () => {
             <h5 className="mb-0">Asset Loans</h5>
           </Col>
           <Col className="d-flex justify-content-end gap-2">
+            {/* Columns Dropdown */}
+            <UncontrolledDropdown>
+              <DropdownToggle color="secondary" caret>
+                <Settings size={16} className="me-1" />
+                Columns
+              </DropdownToggle>
+              <DropdownMenu>
+                {allColumnKeys.map((col) => (
+                  <DropdownItem key={col} toggle={false}>
+                    <Label check>
+                      <Input
+                        type="checkbox"
+                        checked={visibleColumns.includes(col)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setVisibleColumns([...visibleColumns, col]);
+                          } else {
+                            setVisibleColumns(visibleColumns.filter((c) => c !== col));
+                          }
+                        }}
+                      />{' '}
+                      {col.replace(/_/g, ' ').toUpperCase()}
+                    </Label>
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </UncontrolledDropdown>
+
             <Button color="primary" onClick={() => setAddModal(true)}>
               <Plus size={16} className="me-1" /> Add Loan
             </Button>
@@ -287,7 +327,6 @@ const AssetLoanTable = () => {
                   </tr>
                 ))}
               </thead>
-
               <tbody>
                 {table.getRowModel().rows.map((row) => (
                   <tr key={row.id}>
@@ -303,12 +342,11 @@ const AssetLoanTable = () => {
           </div>
         )}
 
+        {/* Pagination */}
         <Row className="mt-3 align-items-center">
           <Col md="6">
-            <div>
-              Page {pageIndex + 1} of {pageCount} | Showing {paginatedData.length} of{' '}
-              {filteredData.length} loans
-            </div>
+            Page {pageIndex + 1} of {pageCount} | Showing {paginatedData.length} of{' '}
+            {filteredData.length} loans
           </Col>
           <Col md="6" className="text-end">
             <div className="d-flex gap-2 justify-content-end">
