@@ -20,9 +20,27 @@ interface AssetLoanViewModalProps {
   isOpen: boolean;
   toggle: () => void;
   loan: Record<string, any> | null;
+  visibleColumns?: string[]; // list of columns to show in PDF
 }
 
-const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle, loan }) => {
+const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
+  isOpen,
+  toggle,
+  loan,
+  visibleColumns = [
+    'assetName',
+    'assetSerial',
+    'borrowerName',
+    'borrowerPayroll',
+    'loanDate',
+    'expectedReturn',
+    'actualReturn',
+    'status',
+    'conditionBefore',
+    'conditionAfter',
+    'remarks',
+  ],
+}) => {
   if (!loan) return null;
 
   const formatDate = (dateStr?: string | null) => {
@@ -35,35 +53,51 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle,
     });
   };
 
-  const exportPDF = () => {
+  // Convert image to base64 safely
+  const toBase64 = (img: string) =>
+    new Promise<string>((resolve, reject) => {
+      const image = new Image();
+      image.src = img;
+      image.crossOrigin = 'anonymous';
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(image, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg'));
+      };
+      image.onerror = (err) => reject(err);
+    });
+
+  const exportPDF = async () => {
     const doc = new jsPDF();
 
-    // Company Logo
-    const img = new Image();
-    img.src = companyLogo;
-    doc.addImage(img, 'JPEG', 14, 10, 30, 30);
+    const imgBase64 = await toBase64(companyLogo);
+    doc.addImage(imgBase64, 'JPEG', 14, 10, 30, 30);
 
-    // Company Name
     doc.setFontSize(16);
     doc.text('GITHUNGURI DAIRY FARMERS COOPERATIVE SOCIETY', 50, 20);
 
-    // Title
     doc.setFontSize(14);
     doc.text('Asset Loan Details', 14, 45);
 
-    const rows = [
-      ['Asset Name', loan.asset?.name || '—'],
-      ['Asset Serial No', loan.asset?.serial_no || '—'],
-      ['Borrower Name', loan.borrower?.full_name || '—'],
-      ['Borrower Payroll No', loan.borrower?.payroll_no || '—'],
-      ['Loan Date', formatDate(loan.loan_date)],
-      ['Expected Return', formatDate(loan.expected_return_date)],
-      ['Actual Return', formatDate(loan.actual_return_date)],
-      ['Status', loan.status || '—'],
-      ['Condition Before', loan.condition_before || '—'],
-      ['Condition After', loan.condition_after || '—'],
-      ['Remarks', loan.remarks || '—'],
-    ];
+    const allRows: Record<string, [string, string]> = {
+      assetName: ['Asset Name', loan.asset?.name || '—'],
+      assetSerial: ['Asset Serial No', loan.asset?.serial_no || '—'],
+      borrowerName: ['Borrower Name', loan.borrower?.full_name || '—'],
+      borrowerPayroll: ['Borrower Payroll No', loan.borrower?.payroll_no || '—'],
+      loanDate: ['Loan Date', formatDate(loan.loan_date)],
+      expectedReturn: ['Expected Return', formatDate(loan.expected_return_date)],
+      actualReturn: ['Actual Return', formatDate(loan.actual_return_date)],
+      status: ['Status', loan.status || '—'],
+      conditionBefore: ['Condition Before', loan.condition_before || '—'],
+      conditionAfter: ['Condition After', loan.condition_after || '—'],
+      remarks: ['Remarks', loan.remarks || '—'],
+    };
+
+    // Map visible columns
+    const rows = visibleColumns.map((col) => allRows[col as keyof typeof allRows]).filter(Boolean);
 
     autoTable(doc, {
       startY: 50,
@@ -150,21 +184,28 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({ isOpen, toggle,
                 <strong>Status:</strong> <Badge color={statusColor}>{loan.status}</Badge>
               </Col>
             </Row>
-            <Row className="mb-2">
-              <Col md="12">
-                <strong>Condition Before:</strong> {loan.condition_before || '—'}
-              </Col>
-            </Row>
-            <Row className="mb-2">
-              <Col md="12">
-                <strong>Condition After:</strong> {loan.condition_after || '—'}
-              </Col>
-            </Row>
-            <Row>
-              <Col md="12">
-                <strong>Remarks:</strong> {loan.remarks || '—'}
-              </Col>
-            </Row>
+
+            {visibleColumns.includes('conditionBefore') && (
+              <Row className="mb-2">
+                <Col md="12">
+                  <strong>Condition Before:</strong> {loan.condition_before || '—'}
+                </Col>
+              </Row>
+            )}
+            {visibleColumns.includes('conditionAfter') && (
+              <Row className="mb-2">
+                <Col md="12">
+                  <strong>Condition After:</strong> {loan.condition_after || '—'}
+                </Col>
+              </Row>
+            )}
+            {visibleColumns.includes('remarks') && (
+              <Row>
+                <Col md="12">
+                  <strong>Remarks:</strong> {loan.remarks || '—'}
+                </Col>
+              </Row>
+            )}
 
             {/* Signature Section */}
             <Row className="mt-5">
