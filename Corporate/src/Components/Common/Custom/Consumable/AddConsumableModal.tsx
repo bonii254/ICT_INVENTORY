@@ -1,74 +1,76 @@
-import React, { useState } from "react";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Spinner,
-} from "reactstrap";
-import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
-import { toast } from "react-toastify";
+import React, { useEffect, useState } from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Spinner } from 'reactstrap';
+import { useForm } from '@tanstack/react-form';
+import { z } from 'zod';
+import { toast } from 'react-toastify';
 
-import { useApiPost } from "../../../../helpers/api_helper";
-import {
-  consumableSchema,
-  Consumable,
-} from "../../../../schemas/consumableSchema";
+import { useApiPost, useApiGet } from '../../../../helpers/api_helper';
+import { consumableSchema, Consumable } from '../../../../schemas/consumableSchema';
 
 type AddConsumableModalProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
-  isOpen,
-  onClose,
-}) => {
+interface Location {
+  id: number;
+  name: string;
+}
+
+const AddConsumableModal: React.FC<AddConsumableModalProps> = ({ isOpen, onClose }) => {
   const [created, setCreated] = useState<Consumable | null>(null);
 
+  // ✅ Fetch available locations
+  const { data: locations, isLoading: loadingLocations } = useApiGet<Location[]>(
+    ['locations'],
+    '/locations',
+    {},
+    true,
+  );
+
+  // ✅ Create new consumable
   const createConsumable = useApiPost<
     { [key: string]: Consumable },
     z.infer<typeof consumableSchema>
   >(
-    "/register/consumable",
+    '/register/consumable',
     (res) => {
-      const firstKey = Object.keys(res).find((k) => k !== "message");
+      const firstKey = Object.keys(res).find((k) => k !== 'message');
       setCreated(res[firstKey as keyof typeof res] as Consumable);
       form.reset();
-      toast.success("✅ Consumable registered successfully.");
+      toast.success('✅ Consumable registered successfully.');
     },
     (err) => {
-      let msg = "Consumable registration failed";
+      let msg = 'Consumable registration failed';
       if (err?.response?.data?.error) {
         const error = err.response.data.error;
-        if (typeof error === "string") {
-          msg = error;
-        } else if (typeof error === "object") {
+        if (typeof error === 'string') msg = error;
+        else if (typeof error === 'object') {
           msg = Object.entries(error)
-            .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
-            .join("\n");
+            .map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`)
+            .join('\n');
         }
       }
       toast.error(`❌ ${msg}`, {
-        position: "top-center",
+        position: 'top-center',
         autoClose: 5000,
-        theme: "colored",
+        theme: 'colored',
       });
-      console.error("Consumable registration failed:", err);
+      console.error('Consumable registration failed:', err);
     },
   );
 
+  // ✅ Add `location_id` to form schema
   const form = useForm({
     defaultValues: {
-      name: "",
-      category: "",
-      brand: "",
-      model: "",
+      name: '',
+      category: '',
+      brand: '',
+      model: '',
       quantity: 1,
-      unit_of_measure: "",
+      unit_of_measure: '',
       reorder_level: 0,
+      location_id: 0, // new
     },
     onSubmit: async ({ value, formApi }) => {
       const result = consumableSchema.safeParse(value);
@@ -87,6 +89,12 @@ const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
         }
         return;
       }
+
+      if (!value.location_id || value.location_id === 0) {
+        toast.warn('⚠️ Please select a location.');
+        return;
+      }
+
       createConsumable.mutate(result.data);
     },
   });
@@ -98,11 +106,11 @@ const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
   };
 
   const fields = [
-    { name: "name", label: "Name" },
-    { name: "category", label: "Category" },
-    { name: "brand", label: "Brand" },
-    { name: "model", label: "Model" },
-    { name: "unit_of_measure", label: "Unit of Measure" },
+    { name: 'name', label: 'Name' },
+    { name: 'category', label: 'Category' },
+    { name: 'brand', label: 'Brand' },
+    { name: 'model', label: 'Model' },
+    { name: 'unit_of_measure', label: 'Unit of Measure' },
   ] as const;
 
   return (
@@ -121,14 +129,37 @@ const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
                     onChange={(e) => field.handleChange(e.target.value)}
                   />
                   {field.state.meta.errors && (
-                    <small className="text-danger">
-                      {field.state.meta.errors}
-                    </small>
+                    <small className="text-danger">{field.state.meta.errors}</small>
                   )}
                 </div>
               )}
             </form.Field>
           ))}
+
+          {/* ✅ Location Dropdown */}
+          <form.Field name="location_id">
+            {(field) => (
+              <div className="col-md-6">
+                <label className="form-label">Location</label>
+                <select
+                  className="form-select"
+                  value={field.state.value || ''}
+                  onChange={(e) => field.handleChange(Number(e.target.value))}
+                  disabled={loadingLocations}
+                >
+                  <option value="">Select location</option>
+                  {locations?.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
+                </select>
+                {field.state.meta.errors && (
+                  <small className="text-danger">{field.state.meta.errors}</small>
+                )}
+              </div>
+            )}
+          </form.Field>
 
           <form.Field name="quantity">
             {(field) => (
@@ -141,9 +172,7 @@ const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
                   onChange={(e) => field.handleChange(Number(e.target.value))}
                 />
                 {field.state.meta.errors && (
-                  <small className="text-danger">
-                    {field.state.meta.errors}
-                  </small>
+                  <small className="text-danger">{field.state.meta.errors}</small>
                 )}
               </div>
             )}
@@ -160,9 +189,7 @@ const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
                   onChange={(e) => field.handleChange(Number(e.target.value))}
                 />
                 {field.state.meta.errors && (
-                  <small className="text-danger">
-                    {field.state.meta.errors}
-                  </small>
+                  <small className="text-danger">{field.state.meta.errors}</small>
                 )}
               </div>
             )}
@@ -193,7 +220,7 @@ const AddConsumableModal: React.FC<AddConsumableModalProps> = ({
           onClick={() => form.handleSubmit()}
           disabled={createConsumable.isPending}
         >
-          {createConsumable.isPending ? <Spinner size="sm" /> : "Register"}
+          {createConsumable.isPending ? <Spinner size="sm" /> : 'Register'}
         </Button>
       </ModalFooter>
     </Modal>

@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
   createColumnHelper,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 import {
   Button,
   Card,
@@ -16,14 +16,14 @@ import {
   Pagination,
   PaginationItem,
   PaginationLink,
-} from "reactstrap";
-import { useApiGet } from "../../../../helpers/api_helper";
-import DeleteTransactionModal from "./DeleteTransactionModal"; // ✅ import
+} from 'reactstrap';
+import { useApiGet } from '../../../../helpers/api_helper';
+import DeleteTransactionModal from './DeleteTransactionModal';
 
 interface Transaction {
   id: number;
   quantity: number;
-  transaction_type: "IN" | "OUT";
+  transaction_type: 'IN' | 'OUT';
   created_at: string;
   user: string | null;
   department: string | null;
@@ -38,23 +38,27 @@ interface PaginatedResponse {
   pages: number;
 }
 
+interface TransactionsTableProps {
+  locationId: number;
+}
+
 const columnHelper = createColumnHelper<Transaction>();
 
-const TransactionsTable = () => {
+const TransactionsTable: React.FC<TransactionsTableProps> = ({ locationId }) => {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
-    fullname: "",
-    department_name: "",
-    transaction_type: "",
-    consumable_name: "",
+    fullname: '',
+    department_name: '',
+    transaction_type: '',
+    consumable_name: '',
   });
 
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data, isLoading, refetch } = useApiGet<PaginatedResponse>(
-    ["transactions", page, filters],
-    "/transaction/search",
+    ['transactions', locationId, page, filters],
+    `/stocktransactions/${locationId}`,
     {
       page,
       per_page: 10,
@@ -67,48 +71,48 @@ const TransactionsTable = () => {
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor("consumable", {
-        header: "Consumable",
-        cell: (info) => info.getValue() || "-",
+      columnHelper.accessor('consumable', {
+        header: 'Consumable',
+        cell: (info) => info.getValue() || '-',
       }),
-      columnHelper.accessor("transaction_type", {
-        header: "Type",
+      columnHelper.accessor('transaction_type', {
+        header: 'Type',
         cell: (info) => (
           <span
             className={`badge rounded-pill ${
-              info.getValue() === "IN" ? "bg-success" : "bg-danger"
+              info.getValue() === 'IN' ? 'bg-success' : 'bg-danger'
             }`}
           >
             {info.getValue()}
           </span>
         ),
       }),
-      columnHelper.accessor("quantity", {
-        header: "Quantity",
+      columnHelper.accessor('quantity', {
+        header: 'Quantity',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor("department", {
-        header: "Department",
-        cell: (info) => info.getValue() || "-",
+      columnHelper.accessor('department', {
+        header: 'Department',
+        cell: (info) => info.getValue() || '-',
       }),
-      columnHelper.accessor("user", {
-        header: "User",
-        cell: (info) => info.getValue() || "-",
+      columnHelper.accessor('user', {
+        header: 'User',
+        cell: (info) => info.getValue() || '-',
       }),
-      columnHelper.accessor("created_at", {
-        header: "Date",
+      columnHelper.accessor('created_at', {
+        header: 'Date',
         cell: (info) =>
           new Date(info.getValue()).toLocaleString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
           }),
       }),
       columnHelper.display({
-        id: "actions",
-        header: "Actions",
+        id: 'actions',
+        header: 'Actions',
         cell: ({ row }) => (
           <div className="d-flex gap-2">
             <Button
@@ -150,36 +154,29 @@ const TransactionsTable = () => {
           <Row className="align-items-center mb-3">
             <Col md={4}>
               <h5 className="mb-0">Stock Transactions</h5>
+              <small className="text-muted">Location ID: {locationId}</small>
             </Col>
             <Col md={8}>
               <div className="d-flex gap-2">
                 <Input
                   placeholder="User name"
                   value={filters.fullname}
-                  onChange={(e) =>
-                    handleFilterChange("fullname", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange('fullname', e.target.value)}
                 />
                 <Input
                   placeholder="Department"
                   value={filters.department_name}
-                  onChange={(e) =>
-                    handleFilterChange("department_name", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange('department_name', e.target.value)}
                 />
                 <Input
                   placeholder="Consumable"
                   value={filters.consumable_name}
-                  onChange={(e) =>
-                    handleFilterChange("consumable_name", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange('consumable_name', e.target.value)}
                 />
                 <Input
                   type="select"
                   value={filters.transaction_type}
-                  onChange={(e) =>
-                    handleFilterChange("transaction_type", e.target.value)
-                  }
+                  onChange={(e) => handleFilterChange('transaction_type', e.target.value)}
                 >
                   <option value="">All</option>
                   <option value="IN">IN</option>
@@ -193,6 +190,10 @@ const TransactionsTable = () => {
             <div className="text-center p-5">
               <Spinner color="primary" />
             </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center text-muted py-4">
+              No transactions found for this location.
+            </div>
           ) : (
             <>
               <div className="table-responsive">
@@ -202,10 +203,7 @@ const TransactionsTable = () => {
                       <tr key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
                           <th key={header.id}>
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            {flexRender(header.column.columnDef.header, header.getContext())}
                           </th>
                         ))}
                       </tr>
@@ -216,10 +214,7 @@ const TransactionsTable = () => {
                       <tr key={row.id}>
                         {row.getVisibleCells().map((cell) => (
                           <td key={cell.id}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )}
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         ))}
                       </tr>
@@ -231,9 +226,7 @@ const TransactionsTable = () => {
               <Pagination className="justify-content-end mt-3">
                 {Array.from({ length: data?.pages || 1 }, (_, i) => (
                   <PaginationItem key={i} active={i + 1 === page}>
-                    <PaginationLink onClick={() => handlePageChange(i + 1)}>
-                      {i + 1}
-                    </PaginationLink>
+                    <PaginationLink onClick={() => handlePageChange(i + 1)}>{i + 1}</PaginationLink>
                   </PaginationItem>
                 ))}
               </Pagination>
@@ -242,7 +235,6 @@ const TransactionsTable = () => {
         </CardBody>
       </Card>
 
-      {/* ✅ Delete modal hooked in */}
       <DeleteTransactionModal
         isOpen={deleteModal}
         toggle={() => setDeleteModal(false)}
