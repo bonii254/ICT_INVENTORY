@@ -85,8 +85,8 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
     const allRows: Record<string, [string, string]> = {
       assetName: ['Asset Name', loan.asset?.name || '—'],
       assetSerial: ['Asset Serial No', loan.asset?.serial_no || '—'],
-      borrowerName: ['Borrower Name', loan.borrower?.full_name || '—'],
-      borrowerPayroll: ['Borrower Payroll No', loan.borrower?.payroll_no || '—'],
+      borrowerName: ['Receiver Name', loan.borrower?.full_name || '—'],
+      borrowerPayroll: ['Receiver Payroll No', loan.borrower?.payroll_no || '—'],
       loanDate: ['Loan Date', formatDate(loan.loan_date)],
       expectedReturn: ['Expected Return', formatDate(loan.expected_return_date)],
       actualReturn: ['Actual Return', formatDate(loan.actual_return_date)],
@@ -111,7 +111,7 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
 
     // Signature Section
     doc.setFontSize(12);
-    doc.text('Borrower:', 14, finalY + 15);
+    doc.text('Receiver:', 14, finalY + 15);
     doc.text(
       'Name: ____________________________________________   Signature: ____________________________________________',
       14,
@@ -164,7 +164,7 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
                 {loan.asset?.serial_no || '—'})
               </Col>
               <Col md="6">
-                <strong>Borrower:</strong> {loan.borrower?.full_name || '—'} (Payroll No:{' '}
+                <strong>Receiver:</strong> {loan.borrower?.full_name || '—'} (Payroll No:{' '}
                 {loan.borrower?.payroll_no || '—'})
               </Col>
             </Row>
@@ -211,7 +211,7 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
             <Row className="mt-5">
               <Col md="6">
                 <p>
-                  <strong>Borrower:</strong>
+                  <strong>Receiver:</strong>
                 </p>
                 <p>Name: ____________________________________________</p>
                 <p>Signature: ____________________________________________</p>

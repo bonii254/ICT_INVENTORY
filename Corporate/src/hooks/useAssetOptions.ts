@@ -23,6 +23,7 @@ type UseAssetOptionsReturn = {
   categories: SelectOption[] | undefined;
   roles: SelectOption[] | undefined;
   assets: SelectOption[] | undefined;
+  providers: SelectOption[] | undefined;
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
@@ -101,6 +102,13 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
     isError: errorAssets,
   } = useApiGet<Option[]>(["assets"], "/assets");
 
+  const {
+    data: providersData,
+    refetch: refetchProviders,
+    isLoading: loadingProviders,
+    isError: errorProviders,
+  } = useApiGet<Option[]>(["providers"], "/providers");
+
   // ✅ Handle wrapped or direct arrays
   const assetArray = extractArray(assetsData, "assets");
   const userArray = extractArray(usersData, "users");
@@ -109,6 +117,7 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
   const statArray = extractArray(statusesData, "statuses");
   const catArray = extractArray(categoriesData, "categories");
   const roleArray = extractArray(rolesData, "roles");
+  const providerArray = extractArray(providersData, "providers");
 
   // ✅ Build label/value pairs for dropdowns
   const assets = assetArray.map((a) => ({
@@ -121,6 +130,11 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
     value: u.id,
   }));
 
+  const providers = providerArray.map((p) => ({
+    label: p.name || p.fullname || "Unnamed Provider",
+    value: p.id,
+  }));
+
   return {
     departments: mapToSelectOptions(deptArray),
     locations: mapToSelectOptions(locArray),
@@ -129,6 +143,7 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
     assets,
     categories: mapToSelectOptions(catArray),
     roles: mapToSelectOptions(roleArray),
+    providers,
     isLoading:
       loadingDept ||
       loadingLoc ||
@@ -136,7 +151,8 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
       loadingUsers ||
       loadingCat ||
       loadingRoles ||
-      loadingAssets,
+      loadingAssets ||
+      loadingProviders,
     isError:
       errorDept ||
       errorLoc ||
@@ -144,7 +160,8 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
       errorUsers ||
       errorCat ||
       errorRoles ||
-      errorAssets,
+      errorAssets ||
+      errorProviders,
     refetch: () => {
       refetchDepartments();
       refetchLocations();
@@ -153,6 +170,7 @@ export const useAssetOptions = (): UseAssetOptionsReturn => {
       refetchCategories();
       refetchRoles();
       refetchAssets();
+      refetchProviders();
     },
   };
 };

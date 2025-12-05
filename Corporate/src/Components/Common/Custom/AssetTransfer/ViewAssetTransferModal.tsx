@@ -1,15 +1,8 @@
-import React from "react";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Table,
-} from "reactstrap";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { Printer, FileText } from "lucide-react";
+import React from 'react';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Table } from 'reactstrap';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Printer, FileText } from 'lucide-react';
 
 interface AssetTransferViewModalProps {
   isOpen: boolean;
@@ -26,23 +19,23 @@ const AssetTransferViewModal: React.FC<AssetTransferViewModalProps> = ({
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text("Asset Transfer Details", 14, 15);
+    doc.text('Asset Transfer Details', 14, 15);
     autoTable(doc, {
       startY: 20,
-      head: [["Field", "Value"]],
+      head: [['Field', 'Value']],
       body: [
-        ["Asset", assetTransfer.asset],
-        ["Serial Number", assetTransfer["asset serial number"] || "-"],
-        ["From Location", assetTransfer.from_location],
-        ["To Location", assetTransfer.to_location],
-        ["Transferred From", assetTransfer.transferred_from],
-        ["Transferred To", assetTransfer.transferred_to],
-        ["Notes", assetTransfer.notes],
-        ["Created At", assetTransfer.created_at],
-        ["Updated At", assetTransfer.updated_at],
+        ['Asset', assetTransfer.asset],
+        ['Serial Number', assetTransfer['asset serial number'] || '-'],
+        ['From Location', assetTransfer.from_location],
+        ['To Location', assetTransfer.to_location],
+        ['Transferred From', assetTransfer.transferred_from],
+        ['Transferred To', assetTransfer.transferred_to],
+        ['Notes', assetTransfer.notes],
+        ['Created At', assetTransfer.created_at],
+        ['Updated At', assetTransfer.updated_at],
       ],
     });
-    doc.save("asset-transfer.pdf");
+    doc.save('asset-transfer.pdf');
   };
 
   return (
@@ -52,12 +45,12 @@ const AssetTransferViewModal: React.FC<AssetTransferViewModalProps> = ({
         <Table className="table-nowrap">
           <tbody>
             <tr>
-              <th style={{ width: "200px" }}>Asset</th>
+              <th style={{ width: '200px' }}>Asset</th>
               <td>{assetTransfer.asset}</td>
             </tr>
             <tr>
               <th>Serial Number</th>
-              <td>{assetTransfer["asset serial number"] || "-"}</td>
+              <td>{assetTransfer['asset serial number'] || '-'}</td>
             </tr>
             <tr>
               <th>From Location</th>

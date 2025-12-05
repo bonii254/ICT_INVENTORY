@@ -1,171 +1,115 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Navdata = () => {
-  const history = useNavigate();
-  //state data
-  const [isDashboard, setIsDashboard] = useState<boolean>(false);
-  const [isAuth, setIsAuth] = useState<boolean>(false);
-  const [isPages, setIsPages] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [isSettings, setIsSettings] = useState<boolean>(false);
-  const [iscurrentState, setIscurrentState] = useState("Dashboard");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  function updateIconSidebar(e: any) {
-    if (e && e.target && e.target.getAttribute("sub-items")) {
-      const ul: any = document.getElementById("two-column-menu");
-      const iconItems: any = ul.querySelectorAll(".nav-icon.active");
-      let activeIconItems = [...iconItems];
-      activeIconItems.forEach((item) => {
-        item.classList.remove("active");
-        var id = item.getAttribute("sub-items");
-        const getID = document.getElementById(id) as HTMLElement;
-        if (getID) getID.classList.remove("show");
+  const updateIconSidebar = (e: any) => {
+    if (e?.target?.getAttribute('sub-items')) {
+      const ul: any = document.getElementById('two-column-menu');
+      const iconItems: any = ul.querySelectorAll('.nav-icon.active');
+      iconItems.forEach((item: any) => {
+        item.classList.remove('active');
+        const id = item.getAttribute('sub-items');
+        const subMenu = document.getElementById(id);
+        if (subMenu) subMenu.classList.remove('show');
       });
     }
-  }
+  };
 
-  useEffect(() => {
-    document.body.classList.remove("twocolumn-panel");
-    if (iscurrentState !== "Dashboard") {
-      setIsDashboard(false);
-    }
-    if (iscurrentState !== "Auth") {
-      setIsAuth(false);
-    }
-    if (iscurrentState !== "Pages") {
-      setIsPages(false);
-    }
-    if (iscurrentState !== "Assets") {
-      setIsPages(false);
-    }
-    if (iscurrentState === "Widgets") {
-      history("/widgets");
-      document.body.classList.add("twocolumn-panel");
-    }
-  }, [history, iscurrentState, isDashboard, isAuth, isPages]);
-
-  const menuItems: any = [
+  const menuItems: any[] = [
     {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: "ri-dashboard-2-line",
-      link: "/dashboard",
-      click: function (e: any) {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: 'ri-dashboard-2-line',
+      link: '/dashboard',
+      click: (e: any) => {
         e.preventDefault();
-        setIscurrentState("Dashboard");
+        // Only navigate if not already on Dashboard
+        if (location.pathname !== '/dashboard') {
+          navigate('/dashboard');
+        }
       },
     },
     {
-      id: "assets",
-      label: "Assets",
-      icon: "ri-computer-line",
-      link: "/assets",
+      id: 'assets',
+      label: 'Assets',
+      icon: 'ri-computer-line',
+      link: '/assets',
     },
     {
-      id: "assetloans",
-      label: "Asset Loans",
-      icon: "ri-handbag-line",
-      link: "/asset-loans",
+      id: 'assetloans',
+      label: 'Asset Loans',
+      icon: 'ri-handbag-line',
+      link: '/asset-loans',
     },
     {
-      id: "externalservices",
-      label: "External Services",
-      icon: "ri-tools-line",
-      link: "/external-services",
+      id: 'externalservices',
+      label: 'External Services',
+      icon: 'ri-tools-line',
+      link: '/external-services',
     },
     {
-      id: "consumables",
-      label: "Consumables",
-      icon: "ri-drop-line",
-      link: "/consumables",
+      id: 'consumables',
+      label: 'Consumables',
+      icon: 'ri-drop-line',
+      link: '/consumables',
     },
     {
-      id: "transfers",
-      label: "Transfers",
-      icon: "ri-exchange-line",
-      link: "/transfers",
+      id: 'transfers',
+      label: 'Transfers',
+      icon: 'ri-exchange-line',
+      link: '/transfers',
     },
     {
-      id: "tickets",
-      label: "Tickets",
-      icon: "ri-customer-service-2-line",
-      link: "/tickets",
+      id: 'tickets',
+      label: 'Tickets',
+      icon: 'ri-customer-service-2-line',
+      link: '/tickets',
     },
     {
-      id: "softwares",
-      label: "Softwares",
-      icon: "ri-macbook-line",
-      link: "/softwares",
+      id: 'softwares',
+      label: 'Softwares',
+      icon: 'ri-macbook-line',
+      link: '/softwares',
     },
     {
-      id: "reports",
-      label: "Reports",
-      icon: "ri-bar-chart-box-line",
-      link: "/reports",
+      id: 'reports',
+      label: 'Reports',
+      icon: 'ri-bar-chart-box-line',
+      link: '/reports',
     },
     {
-      label: "Settings",
+      label: 'Settings',
       isHeader: true,
     },
     {
-      id: "settings",
-      label: "Settings",
-      icon: "ri-settings-3-line",
-      link: "/#",
-      stateVariables: isSettings,
-      click: function (e: any) {
+      id: 'settings',
+      label: 'Settings',
+      icon: 'ri-settings-3-line',
+      link: '/#',
+      click: (e: any) => {
         e.preventDefault();
-        setIsSettings(!isSettings);
-        setIscurrentState("Settings");
+        setIsSettingsOpen(!isSettingsOpen);
         updateIconSidebar(e);
       },
       subItems: [
-        {
-          id: "users",
-          label: "Users",
-          link: "/settings/users",
-          parentId: "settings",
-        },
-        {
-          id: "locations",
-          label: "Locations",
-          link: "/settings/locations",
-          parentId: "settings",
-        },
-        {
-          id: "categories",
-          label: "Categories",
-          link: "/settings/categories",
-          parentId: "settings",
-        },
-        {
-          id: "departments",
-          label: "Departments",
-          link: "/settings/departments",
-          parentId: "settings",
-        },
-        {
-          id: "statuses",
-          label: "Statuses",
-          link: "/settings/statuses",
-          parentId: "settings",
-        },
-        {
-          id: "roles",
-          label: "Roles",
-          link: "/settings/roles",
-          parentId: "settings",
-        },
-        {
-          id: "providers",
-          label: "Service Providers",
-          link: "/settings/providers",
-          parentId: "settings",
-        },
+        { id: 'users', label: 'Users', link: '/settings/users' },
+        { id: 'locations', label: 'Locations', link: '/settings/locations' },
+        { id: 'categories', label: 'Categories', link: '/settings/categories' },
+        { id: 'departments', label: 'Departments', link: '/settings/departments' },
+        { id: 'statuses', label: 'Statuses', link: '/settings/statuses' },
+        { id: 'roles', label: 'Roles', link: '/settings/roles' },
+        { id: 'providers', label: 'Service Providers', link: '/settings/providers' },
       ],
+      stateVariables: isSettingsOpen,
     },
   ];
-  return <React.Fragment>{menuItems}</React.Fragment>;
+
+  return <>{menuItems}</>;
 };
+
 export default Navdata;

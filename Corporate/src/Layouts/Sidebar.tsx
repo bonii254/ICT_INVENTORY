@@ -1,58 +1,61 @@
-import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import SimpleBar from "simplebar-react";
-//import logo
-//import logoSm from "../assets/images/logo-sm.png";
-//import logoDark from "../assets/images/logo-dark.png";
-//import logoLight from "../assets/images/logo-light.png";
-import freshaLogo from "../assets/images/Logo1.jpg";
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import SimpleBar from 'simplebar-react';
+import { Container } from 'reactstrap';
+import freshaLogo from '../assets/images/Logo1.jpg';
 
-//Import Components
-import VerticalLayout from "./VerticalLayouts";
-import TwoColumnLayout from "./TwoColumnLayout";
-import { Container } from "reactstrap";
-import HorizontalLayout from "./HorizontalLayout";
+// Import Layout Variants
+import VerticalLayout from './VerticalLayouts';
+import TwoColumnLayout from './TwoColumnLayout';
+import HorizontalLayout from './HorizontalLayout';
 
 const Sidebar = ({ layoutType }: any) => {
-  useEffect(() => {
-    var verticalOverlay = document.getElementsByClassName("vertical-overlay");
-    if (verticalOverlay) {
-      verticalOverlay[0].addEventListener("click", function () {
-        document.body.classList.remove("vertical-sidebar-enable");
-      });
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // 🧠 Safe handler for logo clicks — prevents re-navigation to same route
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (location.pathname !== '/') {
+      navigate('/');
+    } else {
+      console.log('Already on Dashboard — no navigation triggered.');
     }
-  });
+  };
+
+  // ✅ Close sidebar overlay on outside click
+  useEffect(() => {
+    const overlay = document.querySelector('.vertical-overlay');
+    const handleOverlayClick = () => {
+      document.body.classList.remove('vertical-sidebar-enable');
+    };
+    overlay?.addEventListener('click', handleOverlayClick);
+    return () => overlay?.removeEventListener('click', handleOverlayClick);
+  }, []);
 
   const addEventListenerOnSmHoverMenu = () => {
-    // add listener Sidebar Hover icon on change layout from setting
-    if (
-      document.documentElement.getAttribute("data-sidebar-size") === "sm-hover"
-    ) {
-      document.documentElement.setAttribute(
-        "data-sidebar-size",
-        "sm-hover-active",
-      );
-    } else if (
-      document.documentElement.getAttribute("data-sidebar-size") ===
-      "sm-hover-active"
-    ) {
-      document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
+    const sidebarSize = document.documentElement.getAttribute('data-sidebar-size');
+    if (sidebarSize === 'sm-hover') {
+      document.documentElement.setAttribute('data-sidebar-size', 'sm-hover-active');
+    } else if (sidebarSize === 'sm-hover-active') {
+      document.documentElement.setAttribute('data-sidebar-size', 'sm-hover');
     } else {
-      document.documentElement.setAttribute("data-sidebar-size", "sm-hover");
+      document.documentElement.setAttribute('data-sidebar-size', 'sm-hover');
     }
   };
 
   return (
     <React.Fragment>
       <div className="app-menu navbar-menu">
+        {/* ✅ Logo Box */}
         <div className="navbar-brand-box">
-          <Link to="/" className="logo logo-dark">
+          <a href="/" onClick={handleLogoClick} className="logo logo-dark">
             <span className="logo-sm">
               <img
                 src={freshaLogo}
                 alt="Fresha Logo"
                 height="40"
-                style={{ objectFit: "contain", maxWidth: "100%" }}
+                style={{ objectFit: 'contain', maxWidth: '100%' }}
               />
             </span>
             <span className="logo-lg">
@@ -60,18 +63,18 @@ const Sidebar = ({ layoutType }: any) => {
                 src={freshaLogo}
                 alt="Fresha Logo"
                 height="40"
-                style={{ objectFit: "contain", maxWidth: "100%" }}
+                style={{ objectFit: 'contain', maxWidth: '100%' }}
               />
             </span>
-          </Link>
+          </a>
 
-          <Link to="/" className="logo logo-light">
+          <a href="/" onClick={handleLogoClick} className="logo logo-light">
             <span className="logo-sm">
               <img
                 src={freshaLogo}
                 alt="Fresha Logo"
                 height="40"
-                style={{ objectFit: "contain", maxWidth: "100%" }}
+                style={{ objectFit: 'contain', maxWidth: '100%' }}
               />
             </span>
             <span className="logo-lg">
@@ -79,10 +82,11 @@ const Sidebar = ({ layoutType }: any) => {
                 src={freshaLogo}
                 alt="Fresha Logo"
                 height="40"
-                style={{ objectFit: "contain", maxWidth: "100%" }}
+                style={{ objectFit: 'contain', maxWidth: '100%' }}
               />
             </span>
-          </Link>
+          </a>
+
           <button
             onClick={addEventListenerOnSmHoverMenu}
             type="button"
@@ -92,7 +96,9 @@ const Sidebar = ({ layoutType }: any) => {
             <i className="ri-record-circle-line"></i>
           </button>
         </div>
-        {layoutType === "horizontal" ? (
+
+        {/* ✅ Conditional Layout Render */}
+        {layoutType === 'horizontal' ? (
           <div id="scrollbar">
             <Container fluid>
               <div id="two-column-menu"></div>
@@ -101,13 +107,13 @@ const Sidebar = ({ layoutType }: any) => {
               </ul>
             </Container>
           </div>
-        ) : layoutType === "twocolumn" ? (
-          <React.Fragment>
+        ) : layoutType === 'twocolumn' ? (
+          <>
             <TwoColumnLayout layoutType={layoutType} />
             <div className="sidebar-background"></div>
-          </React.Fragment>
+          </>
         ) : (
-          <React.Fragment>
+          <>
             <SimpleBar id="scrollbar" className="h-100">
               <Container fluid>
                 <div id="two-column-menu"></div>
@@ -117,12 +123,13 @@ const Sidebar = ({ layoutType }: any) => {
               </Container>
             </SimpleBar>
             <div className="sidebar-background"></div>
-          </React.Fragment>
+          </>
         )}
       </div>
+
+      {/* ✅ Sidebar overlay */}
       <div className="vertical-overlay"></div>
     </React.Fragment>
   );
 };
-
 export default Sidebar;

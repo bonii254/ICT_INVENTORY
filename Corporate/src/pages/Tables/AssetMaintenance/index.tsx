@@ -1,8 +1,8 @@
 import React from 'react';
 import { Card, CardBody, CardHeader, Col, Container, Row } from 'reactstrap';
-import AssetLoanTable from './AssetLoansTable';
+import AssetMaintenanceTable from './ExternalMaintenanceTable';
 
-const MyAssetLoanTable = () => {
+const MyAssetMaintenanceTable = () => {
   document.title = 'FRESHA ASSET LOANS Table';
   return (
     <React.Fragment>
@@ -12,10 +12,10 @@ const MyAssetLoanTable = () => {
             <Col lg={12}>
               <Card>
                 <CardHeader>
-                  <h5 className="card-title mb-0">Asset Loan Table</h5>
+                  <h5 className="card-title mb-0">External Asset Maintenance Table</h5>
                 </CardHeader>
                 <CardBody>
-                  <AssetLoanTable />
+                  <AssetMaintenanceTable />
                 </CardBody>
               </Card>
             </Col>
@@ -26,4 +26,4 @@ const MyAssetLoanTable = () => {
   );
 };
 
-export default MyAssetLoanTable;
+export default MyAssetMaintenanceTable;
