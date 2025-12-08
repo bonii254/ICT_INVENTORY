@@ -71,7 +71,7 @@ const AssetLoanTable = () => {
     'expected_return_date',
     'actual_return_date',
     'status',
-  ]); // initially hide condition_before, condition_after, remarks
+  ]); 
 
   const allColumnKeys = [
     'asset',

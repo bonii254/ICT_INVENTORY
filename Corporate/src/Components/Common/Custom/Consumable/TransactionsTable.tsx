@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -46,6 +46,7 @@ const columnHelper = createColumnHelper<Transaction>();
 
 const TransactionsTable: React.FC<TransactionsTableProps> = ({ locationId }) => {
   const [page, setPage] = useState(1);
+
   const [filters, setFilters] = useState({
     fullname: '',
     department_name: '',
@@ -53,16 +54,27 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ locationId }) => 
     consumable_name: '',
   });
 
+  const [debouncedFilters, setDebouncedFilters] = useState(filters);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedFilters(filters);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [filters]);
+
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data, isLoading, refetch } = useApiGet<PaginatedResponse>(
-    ['transactions', locationId, page, filters],
+    ['transactions', locationId, page, debouncedFilters],
     `/stocktransactions/${locationId}`,
     {
       page,
       per_page: 10,
-      ...filters,
+      ...debouncedFilters,
     },
     true,
   );
@@ -140,11 +152,12 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ locationId }) => 
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
   };
 
   const handlePageChange = (newPage: number) => {
-    if (newPage !== page) setPage(newPage);
+    if (newPage !== page) {
+      setPage(newPage);
+    }
   };
 
   return (
@@ -156,6 +169,7 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ locationId }) => 
               <h5 className="mb-0">Stock Transactions</h5>
               <small className="text-muted">Location ID: {locationId}</small>
             </Col>
+
             <Col md={8}>
               <div className="d-flex gap-2">
                 <Input
@@ -226,7 +240,9 @@ const TransactionsTable: React.FC<TransactionsTableProps> = ({ locationId }) => 
               <Pagination className="justify-content-end mt-3">
                 {Array.from({ length: data?.pages || 1 }, (_, i) => (
                   <PaginationItem key={i} active={i + 1 === page}>
-                    <PaginationLink onClick={() => handlePageChange(i + 1)}>{i + 1}</PaginationLink>
+                    <PaginationLink onClick={() => handlePageChange(i + 1)}>
+                      {i + 1}
+                    </PaginationLink>
                   </PaginationItem>
                 ))}
               </Pagination>

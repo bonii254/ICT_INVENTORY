@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -25,15 +26,17 @@ const Navdata = () => {
       id: 'dashboard',
       label: 'Dashboard',
       icon: 'ri-dashboard-2-line',
-      link: '/dashboard',
-      click: (e: any) => {
-        e.preventDefault();
-        // Only navigate if not already on Dashboard
-        if (location.pathname !== '/dashboard') {
-          navigate('/dashboard');
+      link: '/',
+      click: (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (location.pathname !== '/') {
+          e.preventDefault();
+          navigate('/');
+        } else {
+          console.log('Already on Dashboard — no navigation triggered.');
         }
       },
     },
+
     {
       id: 'assets',
       label: 'Assets',

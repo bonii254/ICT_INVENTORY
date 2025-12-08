@@ -43,20 +43,19 @@ const ConsumableTable = () => {
   const [showTransactions, setShowTransactions] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
 
-  // 🧭 Fetch all locations available to this domain
+  
   const { data: locationsData } = useApiGet<Location[]>(
     ['locations'],
-    '/locations', // <-- ensure your backend has a GET /locations endpoint
+    '/locations', 
     {},
     true,
   );
 
-  // 🧠 Fetch consumables for selected location
   const { data, isLoading, refetch } = useApiGet<any>(
     ['consumables', selectedLocation],
     selectedLocation ? `/consumables/${selectedLocation}` : '',
     {},
-    !!selectedLocation, // only enable when location selected
+    !!selectedLocation, 
     { refetchInterval: 10000 },
   );
 

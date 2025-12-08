@@ -38,7 +38,6 @@ interface AddAssetLoanModalProps {
   onClose: () => void;
 }
 
-// 🔧 Helper: Format date in local timezone (fixes off-by-one bug)
 const formatLocalDate = (date: Date) => {
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60_000);
@@ -123,7 +122,6 @@ const AddAssetLoanModal: React.FC<AddAssetLoanModalProps> = ({ isOpen, onClose }
                 )}
               </form.Field>
 
-              {/* Select Borrower */}
               <form.Field name="borrower_id">
                 {(field) => (
                   <Col md="6">

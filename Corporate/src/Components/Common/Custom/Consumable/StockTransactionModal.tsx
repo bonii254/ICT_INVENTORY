@@ -91,7 +91,7 @@ const StockTransactionModal: React.FC<StockTransactionModalProps> = ({
 
       createTransaction.mutate({
         ...parsed.data,
-        consumable_id: consumable.id, // ✅ Injected manually, not in schema
+        consumable_id: consumable.id, 
       });
     },
   });
