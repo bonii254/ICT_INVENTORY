@@ -12,6 +12,9 @@ import {
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useApiGet } from "../../helpers/api_helper";
 
+
+const DEFAULT_LOCATION_ID = 1;
+
 const COLORS = [
   "#556ee6",
   "#34c38f",
@@ -37,8 +40,8 @@ interface ChartData {
 
 const ConsumableQuantityPie = () => {
   const { data, isLoading, isError } = useApiGet<{ consumables: Consumable[] }>(
-    ["consumables"],
-    "consumables",
+    ["consumables", DEFAULT_LOCATION_ID],
+    `consumable/${DEFAULT_LOCATION_ID}`
   );
 
   const consumables: Consumable[] = data?.consumables || [];

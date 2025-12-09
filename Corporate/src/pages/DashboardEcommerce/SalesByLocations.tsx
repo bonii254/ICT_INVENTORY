@@ -22,6 +22,11 @@ const SalesByLocations = () => {
 
   const maxCount = Math.max(...Object.values(locationCounts));
 
+  // Convert to array of entries and sort (optional)
+  const sortedLocations = Object.entries(locationCounts).sort(
+    (a, b) => b[1] - a[1]
+  );
+
   return (
     <Card className="card-height-100 w-100 shadow-sm">
       <CardHeader className="align-items-center d-flex justify-content-between">
@@ -37,6 +42,7 @@ const SalesByLocations = () => {
           <VectorMap {...world} />
         </div>
 
+        {/* Scrollable container for location list */}
         <div
           style={{
             position: "absolute",
@@ -45,9 +51,10 @@ const SalesByLocations = () => {
             right: 0,
             bottom: 0,
             padding: "12px",
-            overflowY: "auto",
             zIndex: 2,
             pointerEvents: "none",
+            display: "flex",
+            justifyContent: "flex-start",
           }}
         >
           <div
@@ -56,12 +63,15 @@ const SalesByLocations = () => {
               borderRadius: "8px",
               padding: "8px",
               maxHeight: "100%",
+              overflowY: "auto", // enable vertical scrolling
+              width: "100%",
+              pointerEvents: "auto", // allow scrolling
             }}
           >
-            {Object.entries(locationCounts).map(([location, count]) => {
+            {sortedLocations.map(([location, count], index) => {
               const width = (count / maxCount) * 100;
               return (
-                <div key={location}>
+                <div key={location} style={{ marginBottom: "8px" }}>
                   <p className="mt-3 mb-1">
                     {location} <span className="float-end">{count}</span>
                   </p>

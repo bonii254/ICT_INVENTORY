@@ -6,6 +6,7 @@ import MyConsumablesTable from '../pages/Tables/Consumables/index';
 import MyAssetTransferTable from '../pages/Tables/AssetTransfer';
 import MyAssetLoanTable from '../pages/Tables/assetLoans/';
 import MyAssetMaintenanceTable from '../pages/Tables/AssetMaintenance';
+import MyAssetLifecycleTable from '../pages/Tables/AssetLifeCycle'
 import Login from '../pages/Authentication/Login';
 import Register from '../pages/Authentication/Register';
 import ForgetPasswordPage from '../pages/Authentication/ForgetPassword';
@@ -21,6 +22,7 @@ const authProtectedRoutes = [
   { path: '/transfers', component: withAuth(<MyAssetTransferTable />) },
   { path: '/consumables', component: withAuth(<MyConsumablesTable />) },
   { path: '/asset-loans', component: withAuth(<MyAssetLoanTable />) },
+  { path: '/assetlifecycle', component: withAuth(<MyAssetLifecycleTable />) },
   { path: '/external-services', component: withAuth(<MyAssetMaintenanceTable />) },
   { path: '/profile', component: withAuth(<UserProfile />) },
   { path: '/', exact: true, component: <Navigate to={DASHBOARD_ROUTE} /> },

@@ -257,7 +257,6 @@ const AssetTable = () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Assets');
 
-    // ===== 1. Insert Logo (only col A) =====
     try {
       const response = await fetch(companylogo);
       const logoBuffer = await response.arrayBuffer();

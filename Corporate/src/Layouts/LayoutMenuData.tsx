@@ -68,10 +68,10 @@ const Navdata = () => {
       link: '/transfers',
     },
     {
-      id: 'tickets',
-      label: 'Tickets',
-      icon: 'ri-customer-service-2-line',
-      link: '/tickets',
+      id: 'assetlifecycle',
+      label: 'AssetLifeCycle',
+      icon: 'ri-history-line',
+      link: '/assetlifecycle',
     },
     {
       id: 'softwares',

@@ -21,7 +21,7 @@ const ProfileDropdown = () => {
   const userRole = userData?.role || "User";
 
   const { mutate: logout } = useApiPost<null, void>(
-    "/auth/logout",
+    "/logout",
     () => {
       localStorage.removeItem("authUser");
       sessionStorage.clear();
