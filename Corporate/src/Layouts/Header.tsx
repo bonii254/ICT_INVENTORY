@@ -52,11 +52,9 @@ const Header: React.FC<HeaderProps> = ({
     (state) => state.Layout.sidebarVisibilitytype,
   );
 
-  const [searchOpen, setSearchOpen] = useState(false);
   const [alertDropdownOpen, setAlertDropdownOpen] = useState(false);
   const [logDropdownOpen, setLogDropdownOpen] = useState(false);
 
-  const toggleSearch = () => setSearchOpen((prev) => !prev);
   const toggleAlertDropdown = () => setAlertDropdownOpen((prev) => !prev);
   const toggleLogDropdown = () => setLogDropdownOpen((prev) => !prev);
 
@@ -150,38 +148,11 @@ const Header: React.FC<HeaderProps> = ({
               </span>
             </button>
 
-            <SearchOption />
           </div>
 
           <div className="d-flex align-items-center gap-2">
-            <Dropdown
-              isOpen={searchOpen}
-              toggle={toggleSearch}
-              className="d-md-none topbar-head-dropdown header-item"
-            >
-              <DropdownToggle
-                tag="button"
-                className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle"
-              >
-                <i className="bx bx-search fs-22" />
-              </DropdownToggle>
-              <DropdownMenu className="dropdown-menu-lg dropdown-menu-end p-0">
-                <Form className="p-3">
-                  <div className="form-group m-0">
-                    <div className="input-group">
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Search ..."
-                      />
-                      <button className="btn btn-primary" type="submit">
-                        <i className="mdi mdi-magnify" />
-                      </button>
-                    </div>
-                  </div>
-                </Form>
-              </DropdownMenu>
-            </Dropdown>
+            
+              
 
             <Dropdown isOpen={logDropdownOpen} toggle={toggleLogDropdown}>
               <DropdownToggle
@@ -190,7 +161,7 @@ const Header: React.FC<HeaderProps> = ({
                 className="btn btn-soft-primary"
               >
                 <i className="ri-add-circle-line me-1" />
-                Log Activity
+                Add New
               </DropdownToggle>
               <DropdownMenu end>
                 <DropdownItem onClick={onAddAsset} disabled={isAssetOpen}>

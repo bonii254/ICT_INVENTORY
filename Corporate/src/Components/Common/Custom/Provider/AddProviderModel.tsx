@@ -18,7 +18,9 @@ const providerSchema = z.object({
   provider_type: z.enum(['COMPANY', 'INDIVIDUAL']).optional(),
 });
 
-type Provider = z.infer<typeof providerSchema> & { id?: number };
+
+
+export type Provider = z.infer<typeof providerSchema> & { id?: number };
 
 interface AddProviderModalProps {
   isOpen: boolean;
