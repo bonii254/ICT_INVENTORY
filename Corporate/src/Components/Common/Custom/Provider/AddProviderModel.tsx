@@ -15,10 +15,8 @@ const providerSchema = z.object({
   email: z.string().email('Invalid email address').optional(),
   phone: z.string().max(100, 'Phone number too long').optional(),
   address: z.string().max(255, 'Address too long').optional(),
-  provider_type: z.enum(['COMPANY', 'INDIVIDUAL']).optional(),
+  provider_type: z.enum(['COMPANY', 'INDIVIDUAL']).default('COMPANY'), 
 });
-
-
 
 export type Provider = z.infer<typeof providerSchema> & { id?: number };
 
@@ -89,6 +87,7 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
         });
         return;
       }
+      console.log('Provider data being sent:', result.data);
       createProvider.mutate(result.data);
     },
   });
@@ -194,7 +193,7 @@ const AddProviderModal: React.FC<AddProviderModalProps> = ({ isOpen, onClose, on
                 <label className="form-label">Provider Type</label>
                 <select
                   className="form-select"
-                  value={field.state.value}
+                  value={field.state.value || 'COMPANY'}
                   onChange={(e) => field.handleChange(e.target.value as 'COMPANY' | 'INDIVIDUAL')}
                 >
                   <option value="COMPANY">Company</option>

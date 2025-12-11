@@ -74,7 +74,7 @@ const AssetMaintenanceTable = () => {
     'expected_return_date',
     'actual_return_date',
     'status',
-    'cost_estimate',
+    'delivery_note',
     'actual_cost',
   ]);
 
@@ -87,7 +87,7 @@ const AssetMaintenanceTable = () => {
     'expected_return_date',
     'actual_return_date',
     'status',
-    'cost_estimate',
+    'delivery_note',
     'actual_cost',
     'collected_by',
     'received_by',

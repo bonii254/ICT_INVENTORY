@@ -140,7 +140,7 @@ const Login: React.FC = () => {
           <Row>
             <Col lg={12}>
               <div className="text-center mt-sm-5 mb-4 text-white-50">
-                <p className="mt-3 fs-1 fw-bold text-white">ICT INVENTORY SYSTEM</p>
+                <p className="mt-3 fs-1 fw-bold text-white">FRESHA INVENTORY SYSTEM</p>
               </div>
             </Col>
           </Row>

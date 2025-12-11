@@ -15,11 +15,12 @@ import { toast } from 'react-toastify';
 import { z } from 'zod';
 import { useApiPut } from '../../../../helpers/api_helper';
 
-// ✅ Zod schema for validation
+// ✅ Zod schema for frontend validation
 const receiveSchema = z.object({
   actual_return_date: z.string(),
   actual_cost: z.number().min(0, 'Cost must be non-negative').optional(),
   Condition_After_Maintenance: z.string().optional(),
+  delivery_note: z.string().optional(),
 });
 
 type ReceiveForm = z.infer<typeof receiveSchema>;
@@ -30,6 +31,7 @@ interface ReturnMaintenanceModalProps {
   maintenanceId: number;
   initialCondition?: string;
   initialActualCost?: number;
+  initialdeliverynote?: string;
   onSuccess?: (maintenance: any) => void;
 }
 
@@ -38,6 +40,7 @@ const ReturnMaintenanceModal: React.FC<ReturnMaintenanceModalProps> = ({
   onClose,
   maintenanceId,
   initialCondition = '',
+  initialdeliverynote = '',
   initialActualCost,
   onSuccess,
 }) => {
@@ -45,6 +48,7 @@ const ReturnMaintenanceModal: React.FC<ReturnMaintenanceModalProps> = ({
     actual_return_date: new Date().toISOString().split('T')[0],
     actual_cost: initialActualCost ?? 0,
     Condition_After_Maintenance: initialCondition,
+    delivery_note: initialdeliverynote,
   });
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
@@ -64,26 +68,50 @@ const ReturnMaintenanceModal: React.FC<ReturnMaintenanceModalProps> = ({
       onSuccess?.(res.maintenance);
       onClose();
     },
-    (err) => {
-      const msg =
-        err?.response?.data?.error || err?.message || '❌ Failed to mark asset as returned.';
-      toast.error(msg);
-    },
+    () => {
+      // Backend errors will be handled in handleSubmit onError
+    }
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1️⃣ Frontend Zod validation
     const result = receiveSchema.safeParse(formValues);
+    const newErrors: Record<string, string> = {};
+
     if (!result.success) {
-      const fieldErrors = Object.fromEntries(
-        Object.entries(result.error.flatten().fieldErrors).map(([k, v]) => [k, v?.[0] || '']),
-      );
-      setErrors(fieldErrors);
+      Object.entries(result.error.flatten().fieldErrors).forEach(([key, val]) => {
+        newErrors[key] = val?.[0] || '';
+      });
+      setErrors(newErrors);
       return;
     }
 
-    setErrors({});
-    receiveAsset.mutate(result.data);
+    setErrors({}); // clear frontend errors
+
+    // 2️⃣ Submit to backend
+    receiveAsset.mutate(formValues, {
+      onError: (err: any) => {
+        const backendErrors: Record<string, string> = {};
+
+        // Field-level backend validation errors
+        if (err?.response?.data?.errors) {
+          Object.entries(err.response.data.errors).forEach(([key, val]) => {
+            backendErrors[key] = Array.isArray(val) ? val[0] : String(val);
+          });
+        }
+
+        // If no field-level errors, show generic error toast
+        if (Object.keys(backendErrors).length === 0) {
+          const msg =
+            err?.response?.data?.error || err?.message || '❌ Failed to mark asset as returned.';
+          toast.error(msg);
+        }
+
+        setErrors(backendErrors);
+      },
+    });
   };
 
   return (
@@ -129,6 +157,19 @@ const ReturnMaintenanceModal: React.FC<ReturnMaintenanceModalProps> = ({
               invalid={!!errors.Condition_After_Maintenance}
             />
             <FormFeedback>{errors.Condition_After_Maintenance}</FormFeedback>
+          </div>
+
+          {/* Delivery Note */}
+          <div className="mb-3">
+            <Label>Delivery Note</Label>
+            <Input
+              type="text"
+              name="delivery_note"
+              value={formValues.delivery_note || ''}
+              onChange={handleChange}
+              invalid={!!errors.delivery_note}
+            />
+            <FormFeedback>{errors.delivery_note}</FormFeedback>
           </div>
         </ModalBody>
 
