@@ -398,8 +398,8 @@ const AssetLoanTable = () => {
           toggle={() => setDeleteModal(false)}
           loan={{
             id: selectedLoan?.id ?? 0,
-            asset_name: selectedLoan?.asset,
-            borrower_name: selectedLoan?.borrower,
+            asset_name: selectedLoan?.asset?.name || "-",
+            borrower_name: selectedLoan?.borrower?.full_name || "-",
           }}
           onDeleteSuccess={() => {
             setDeleteModal(false);
