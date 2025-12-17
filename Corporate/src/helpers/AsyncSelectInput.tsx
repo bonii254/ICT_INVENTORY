@@ -63,7 +63,7 @@ const AsyncSelectInput: React.FC<AsyncSelectInputProps> = ({
         isClearable
         isSearchable={isSearchable}
         onChange={(selected: Option | null) =>
-          field.handleChange(selected?.value ?? 0)
+          field.handleChange(selected?.value ?? null)
         }
         filterOption={customFilterOption}
         options={sortedOptions}

@@ -7,7 +7,17 @@ import {
   createColumnHelper,
   flexRender,
 } from '@tanstack/react-table';
-import { Button, Card, CardBody, Col, Row, Spinner, Input, FormGroup, Label } from 'reactstrap';
+import {
+  Button,
+  Card,
+  CardBody,
+  Col,
+  Row,
+  Spinner,
+  Input,
+  FormGroup,
+  Label,
+} from 'reactstrap';
 
 import { useApiGet } from '../../../helpers/api_helper';
 import AddConsumableModal from '../../../Components/Common/Custom/Consumable/AddConsumableModal';
@@ -43,54 +53,38 @@ const ConsumableTable = () => {
   const [showTransactions, setShowTransactions] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<number | null>(null);
 
-  
-  const { data: locationsData } = useApiGet<Location[]>(
-    ['locations'],
-    '/locations', 
-    {},
-    true,
-  );
+  /* ---------------- LOCATIONS ---------------- */
+  const { data: locationsData, isLoading: locationsLoading } =
+    useApiGet<Location[]>(['locations'], '/locations', {}, true);
 
-  const { data, isLoading, refetch } = useApiGet<any>(
+  /* ---------------- CONSUMABLES ---------------- */
+  const consumablesUrl = `/consumables/${selectedLocation ?? ''}`;
+
+  const {
+    data,
+    isLoading,
+    refetch,
+  } = useApiGet<any>(
     ['consumables', selectedLocation],
-    selectedLocation ? `/consumables/${selectedLocation}` : '',
+    consumablesUrl,
     {},
-    !!selectedLocation, 
-    { refetchInterval: 10000 },
+    Boolean(selectedLocation), // ✅ query only runs when location is selected
+    { refetchInterval: 10000 }
   );
 
-  const consumables: Consumable[] = data?.consumables || [];
+  const consumables: Consumable[] = data?.consumables ?? [];
 
-  const columns = useMemo(() => {
-    return [
-      columnHelper.accessor('name', {
-        header: 'Name',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('category', {
-        header: 'Category',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('brand', {
-        header: 'Brand',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('model', {
-        header: 'Model',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('quantity', {
-        header: 'Quantity',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('unit_of_measure', {
-        header: 'Unit',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('reorder_level', {
-        header: 'Reorder Level',
-        cell: (info) => info.getValue(),
-      }),
+  /* ---------------- TABLE COLUMNS ---------------- */
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('name', { header: 'Name' }),
+      columnHelper.accessor('category', { header: 'Category' }),
+      columnHelper.accessor('brand', { header: 'Brand' }),
+      columnHelper.accessor('model', { header: 'Model' }),
+      columnHelper.accessor('quantity', { header: 'Quantity' }),
+      columnHelper.accessor('unit_of_measure', { header: 'Unit' }),
+      columnHelper.accessor('reorder_level', { header: 'Reorder Level' }),
+
       columnHelper.display({
         id: 'checkout',
         header: 'Checkout',
@@ -107,6 +101,7 @@ const ConsumableTable = () => {
           </Button>
         ),
       }),
+
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
@@ -135,31 +130,37 @@ const ConsumableTable = () => {
           </div>
         ),
       }),
-    ];
-  }, []);
+    ],
+    []
+  );
 
   const table = useReactTable({
     data: consumables,
     columns,
-    state: {},
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  /* ---------------- RENDER ---------------- */
   return (
     <>
       <Card>
         <CardBody>
           <Row className="mb-3 align-items-center">
-            <Col xs="12" md="4">
+            <Col md="4">
               <FormGroup>
                 <Label for="locationSelect">Select Location</Label>
                 <Input
                   id="locationSelect"
                   type="select"
                   value={selectedLocation ?? ''}
-                  onChange={(e) => setSelectedLocation(Number(e.target.value))}
+                  onChange={(e) =>
+                    setSelectedLocation(
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
+                  disabled={locationsLoading}
                 >
                   <option value="">-- Choose Location --</option>
                   {locationsData?.map((loc) => (
@@ -179,6 +180,7 @@ const ConsumableTable = () => {
               >
                 {showTransactions ? 'Hide Transactions' : 'View Transactions'}
               </Button>
+
               <Button
                 color="primary"
                 disabled={!selectedLocation}
@@ -189,23 +191,31 @@ const ConsumableTable = () => {
             </Col>
           </Row>
 
+          {/* ---------------- EMPTY / LOADING STATES ---------------- */}
           {!selectedLocation ? (
             <div className="text-center text-muted py-5">
-              Please select a location to view consumables.
+              <strong>Select a location</strong> to view consumables.
             </div>
           ) : isLoading ? (
-            <div className="text-center p-5">
+            <div className="text-center py-5">
               <Spinner color="primary" />
+            </div>
+          ) : consumables.length === 0 ? (
+            <div className="text-center text-muted py-5">
+              <strong>No consumables found</strong> for this location.
             </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-centered table-nowrap">
                 <thead className="table-light">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
+                  {table.getHeaderGroups().map((hg) => (
+                    <tr key={hg.id}>
+                      {hg.headers.map((header) => (
                         <th key={header.id}>
-                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                         </th>
                       ))}
                     </tr>
@@ -216,7 +226,10 @@ const ConsumableTable = () => {
                     <tr key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -226,7 +239,11 @@ const ConsumableTable = () => {
             </div>
           )}
 
-          <AddConsumableModal isOpen={addModal} onClose={() => setAddModal(false)} />
+          {/* ---------------- MODALS ---------------- */}
+          <AddConsumableModal
+            isOpen={addModal}
+            onClose={() => setAddModal(false)}
+          />
 
           <EditConsumableModal
             isOpen={editModal}
@@ -254,7 +271,6 @@ const ConsumableTable = () => {
         </CardBody>
       </Card>
 
-      {/* ✅ Conditionally render Transactions Table for same location */}
       {showTransactions && selectedLocation && (
         <div className="mt-4">
           <TransactionsTable locationId={selectedLocation} />

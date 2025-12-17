@@ -28,7 +28,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const maintenanceSchema = z.object({
   asset_id: z.number().min(1, 'Asset is required'),
-  parent_asset_id: z.number().optional(),
+  parent_asset_id: z.number().nullable().optional(),
   provider_id: z.number().min(1, 'Provider is required'),
   maintenance_type: z.enum(['REPAIR', 'REFURBISH', 'CALIBRATION', 'UPGRADE', 'OTHER']),
   description: z.string().max(500).optional(),
@@ -103,6 +103,12 @@ const AddExternalMaintenanceModal: React.FC<AddExternalMaintenanceModalProps> = 
         }
         return;
       }
+      const dataToSend = {
+        ...parsed.data,
+        parent_asset_id: parsed.data.parent_asset_id && parsed.data.parent_asset_id > 0 
+        ? parsed.data.parent_asset_id 
+        : null,
+      };
       createMaintenance.mutate(parsed.data);
     },
   });
