@@ -31,6 +31,7 @@ type Asset = {
   id: number;
   serial_number?: string;
   model_number?: string;
+  fresha_tag?: string;
   purchase_date?: string;
   warranty_expiry?: string;
   configuration?: string;
@@ -116,6 +117,7 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
     defaultValues: {
       serial_number: undefined,
       model_number: undefined,
+      fresha_tag: undefined,
       purchase_date: undefined,
       warranty_expiry: undefined,
       configuration: undefined,
@@ -128,7 +130,6 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
     onSubmit: async ({ value }) => {
       const result = assetUpdateSchema.safeParse(value);
       if (!result.success) {
-        // show validation errors
         toast.error("❌ Validation failed. Please check inputs.", {
           position: "top-center",
           autoClose: 4000,
@@ -144,7 +145,6 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
           (key) => {
             const newVal = result.data[key];
             const oldVal = asset[key];
-            // ✅ Only include fields that changed AND are defined
             if (newVal !== undefined && newVal !== "" && newVal !== oldVal) {
               payload[key] = newVal as any;
             }
@@ -154,7 +154,6 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
         Object.assign(payload, result.data);
       }
 
-      // ✅ If no changes, don't call API
       if (Object.keys(payload).length === 0) {
         toast.info("No changes detected.", {
           position: "top-center",
@@ -168,7 +167,6 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
     },
   });
 
-  // ✅ Prefill form when editing existing asset
   useEffect(() => {
     if (asset) {
       form.reset({
@@ -181,6 +179,7 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
         location_id: asset.location_id || undefined,
         category_id: asset.category_id || undefined,
         assigned_to: asset.assigned_to || undefined,
+        fresha_tag: asset.fresha_tag || undefined,
         status_id: asset.status_id || undefined,
       });
     }
@@ -203,7 +202,7 @@ const UpdateAssetModal: React.FC<UpdateAssetModalProps> = ({
         <ModalBody>
           <form onSubmit={form.handleSubmit} className="row gy-3">
             {(
-              ["serial_number", "model_number", "configuration"] as Array<
+              ["serial_number", "model_number","fresha_tag", "configuration"] as Array<
                 keyof AssetFormValues
               >
             ).map((fieldName) => (

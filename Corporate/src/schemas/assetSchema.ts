@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const assetSchema = z.object({
   serial_number: z.string().min(1, "Serial number is required"),
+  fresha_tag: z.string().min(1, "fresha asset tag is required"),
   model_number: z.string().min(1, "Model number is required"),
   purchase_date: z.string().min(1, "Purchase date is required"),
   warranty_expiry: z.string().min(1, "Warranty expiry is required"),
@@ -16,6 +17,7 @@ export type AssetFormPayload = z.infer<typeof assetSchema>;
 
 export const assetUpdateSchema = z.object({
   serial_number: z.string().min(1, "Serial number is required").optional(),
+  fresha_tag: z.string().min(1, "fresha asset tag is required").optional(),
   model_number: z.string().min(1, "Model number is required").optional(),
   purchase_date: z.string().min(1, "Purchase date is required").optional(),
   warranty_expiry: z.string().min(1, "Warranty expiry is required").optional(),

@@ -21,6 +21,7 @@ import AddUserModal from './Custom/User/AddUserModal';
 
 type CreatedAsset = {
   asset_tag: string;
+  fresha_tag: string;
   name: string;
   serial_number: string;
   model_number: string;
@@ -91,6 +92,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
       purchase_date: '',
       warranty_expiry: '',
       configuration: '',
+      fresha_tag: '',
       department_id: 0,
       location_id: 0,
       category_id: 0,
@@ -309,6 +311,19 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ isOpen, onClose }) => {
                     </Button>
                   </label>
                   <AsyncSelectInput field={field} options={users || []} placeholder="Assign To" />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="fresha_tag">
+              {(field) => (
+                <div className="col-md-6">
+                  <label className="form-label">asset tag</label>
+                  <input
+                    className="form-control"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
                 </div>
               )}
             </form.Field>

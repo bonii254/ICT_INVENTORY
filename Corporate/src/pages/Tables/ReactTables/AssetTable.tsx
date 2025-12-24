@@ -74,6 +74,7 @@ const AssetTable = () => {
   const allColumnKeys = [
     'name',
     'asset tag',
+    'fresha_tag',
     'serial_number',
     'model',
     'category',
@@ -106,7 +107,7 @@ const AssetTable = () => {
 
   const { data, isLoading } = useApiGet<any>(
     ['assets'],
-    `/assets`, // fetch full dataset
+    `/assets`,
     {},
     true,
     { refetchInterval: 10000 },

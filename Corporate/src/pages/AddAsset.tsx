@@ -15,6 +15,7 @@ type CreatedAsset = {
   name: string;
   serial_number: string;
   model_number: string;
+  fresha_tag: string;
   category: string;
   assigned_to: string;
   location: string;
@@ -62,6 +63,7 @@ const AddAssetPage: React.FC = () => {
       location_id: 0,
       category_id: 0,
       assigned_to: 0,
+      fresha_tag: '',
       status_id: 0,
     },
     onSubmit: async ({ value, formApi }) => {
