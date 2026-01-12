@@ -62,6 +62,7 @@ const AssetTransferTable = () => {
   const allColumnKeys = [
     'asset_name',
     'asset_serial',
+    'asset_tag',
     'transferred_from',
     'from_payroll',
     'transferred_to',

@@ -52,6 +52,7 @@ const AssetTransferViewModal: React.FC<AssetTransferViewModalProps> = ({
       body: [
         ['Asset Name', assetTransfer.asset_name || '—'],
         ['Serial Number', assetTransfer.asset_serial || '—'],
+        ['Asset Tag', assetTransfer.asset_tag || '—'],
         ['From Location', assetTransfer.from_location || '—'],
         ['From Payroll', assetTransfer.from_payroll || '—'],
         ['To Location', assetTransfer.to_location || '—'],
@@ -111,6 +112,9 @@ const AssetTransferViewModal: React.FC<AssetTransferViewModalProps> = ({
               </Col>
               <Col md="6">
                 <strong>Serial No:</strong> {assetTransfer.asset_serial || '—'}
+              </Col>
+              <Col md="6">
+                <strong>Asset Tag:</strong> {assetTransfer.asset_tag || '—'}
               </Col>
             </Row>
 

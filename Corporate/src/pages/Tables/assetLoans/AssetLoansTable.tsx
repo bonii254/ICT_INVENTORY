@@ -66,6 +66,7 @@ const AssetLoanTable = () => {
   const [globalFilter, setGlobalFilter] = useState('');
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     'asset',
+    'asset_tag',
     'borrower',
     'loan_date',
     'expected_return_date',
@@ -75,6 +76,7 @@ const AssetLoanTable = () => {
 
   const allColumnKeys = [
     'asset',
+    'asset_tag',
     'borrower',
     'loan_date',
     'expected_return_date',

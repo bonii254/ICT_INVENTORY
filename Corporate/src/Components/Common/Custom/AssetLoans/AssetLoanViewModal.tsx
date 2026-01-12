@@ -30,6 +30,7 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
   visibleColumns = [
     'assetName',
     'assetSerial',
+    'assetTag',
     'borrowerName',
     'borrowerPayroll',
     'loanDate',
@@ -85,6 +86,7 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
     const allRows: Record<string, [string, string]> = {
       assetName: ['Asset Name', loan.asset?.name || '—'],
       assetSerial: ['Asset Serial No', loan.asset?.serial_no || '—'],
+      assetTag: ['Asset Tag', loan.asset?.asset_tag || '—'],
       borrowerName: ['Receiver Name', loan.borrower?.full_name || '—'],
       borrowerPayroll: ['Receiver Payroll No', loan.borrower?.payroll_no || '—'],
       loanDate: ['Loan Date', formatDate(loan.loan_date)],
@@ -161,7 +163,8 @@ const AssetLoanViewModal: React.FC<AssetLoanViewModalProps> = ({
             <Row className="mb-2">
               <Col md="6">
                 <strong>Asset:</strong> {loan.asset?.name || '—'} (Serial:{' '}
-                {loan.asset?.serial_no || '—'})
+                {loan.asset?.serial_no || '—'}) (Asset Tag:{' '}
+                {loan.asset?.asset_tag || '—'})
               </Col>
               <Col md="6">
                 <strong>Receiver:</strong> {loan.borrower?.full_name || '—'} (Payroll No:{' '}
