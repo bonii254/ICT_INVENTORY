@@ -41,7 +41,6 @@ const Login: React.FC = () => {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
 
-  // --- Login hook ---
   const login = useLogin(
     (data) => {
       if (data.user.must_change_password) {

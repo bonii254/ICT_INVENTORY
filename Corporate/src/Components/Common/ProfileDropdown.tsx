@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Dropdown,
   DropdownItem,
@@ -11,15 +11,21 @@ import { useUser } from "../../context/UserContext";
 import { useApiPost } from "../../helpers/api_helper";
 import { LOGIN_ROUTE } from "../../helpers/url_helper";
 
+import AdminResetPasswordModal from "../../pages/Authentication/AdminResetPasswordModal";
+
 const ProfileDropdown = () => {
   const navigate = useNavigate();
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
-  const toggleProfileDropdown = () => setIsProfileDropdown((prev) => !prev);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  const toggleProfileDropdown = () =>
+    setIsProfileDropdown((prev) => !prev);
 
   const { data: userData } = useUser();
   const userName = userData?.fullname || "Admin";
   const userRole = userData?.role || "User";
 
+  // Logout mutation
   const { mutate: logout } = useApiPost<null, void>(
     "/logout",
     () => {
@@ -29,11 +35,11 @@ const ProfileDropdown = () => {
     },
     (error) => {
       console.error("Logout failed:", error.message);
-    },
+    }
   );
 
   return (
-    <React.Fragment>
+    <>
       <Dropdown
         isOpen={isProfileDropdown}
         toggle={toggleProfileDropdown}
@@ -56,9 +62,20 @@ const ProfileDropdown = () => {
             </span>
           </span>
         </DropdownToggle>
+
         <DropdownMenu className="dropdown-menu-end">
           <h6 className="dropdown-header">Welcome {userName}!</h6>
           <div className="dropdown-divider" />
+
+          {/* ✅ Admin Reset Password */}
+          <DropdownItem
+            onClick={() => setIsResetModalOpen(true)}
+            className="dropdown-item"
+            style={{ cursor: "pointer" }}
+          >
+            <i className="mdi mdi-lock-reset text-muted fs-16 align-middle me-1"></i>
+            <span className="align-middle">Reset User Password</span>
+          </DropdownItem>
 
           <DropdownItem
             onClick={() => logout()}
@@ -66,13 +83,17 @@ const ProfileDropdown = () => {
             style={{ cursor: "pointer" }}
           >
             <i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
-            <span className="align-middle" data-key="t-logout">
-              Logout
-            </span>
+            <span className="align-middle">Logout</span>
           </DropdownItem>
         </DropdownMenu>
       </Dropdown>
-    </React.Fragment>
+
+      {/* ✅ Admin Reset Password Modal */}
+      <AdminResetPasswordModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+      />
+    </>
   );
 };
 
